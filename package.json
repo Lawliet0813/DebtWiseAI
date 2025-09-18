@@ -1,0 +1,39 @@
+{
+  "name": "debtwise-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "智能債務管理系統 - AI驅動的債務規劃與管理工具",
+  "keywords": ["債務管理", "財務規劃", "React", "AI", "還款策略"],
+  "author": "DebtWise Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.5.0",
+    "date-fns": "^2.30.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "vite": "^4.4.5",
+    "vitest": "^0.34.0"
+  }
+}
