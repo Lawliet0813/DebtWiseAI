@@ -4,14 +4,12 @@ import {
   Filter, Search, BarChart3, AlertTriangle, CheckCircle, Clock 
 } from 'lucide-react';
 
-const DebtsList = ({ 
-  debts, 
-  onAddDebt, 
-  onEditDebt, 
-  onDeleteDebt, 
+const DebtsList = ({
+  debts,
+  onDeleteDebt,
   debtTypes,
   onShowAddForm,
-  onShowEditForm 
+  onShowEditForm
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');

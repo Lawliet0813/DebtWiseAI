@@ -125,6 +125,19 @@ function createDebtService(context) {
     if (payload.minimumPayment !== undefined) {
       debt.minimumPayment = clampToZero(getNumber(payload, 'minimumPayment', { required: false, min: 0.01, defaultValue: debt.minimumPayment }));
     }
+    if (payload.principal !== undefined) {
+      const updatedPrincipal = clampToZero(getNumber(payload, 'principal', { required: false, min: 0.01, defaultValue: debt.principal }));
+      debt.principal = updatedPrincipal;
+      if (debt.balance > updatedPrincipal) {
+        debt.balance = updatedPrincipal;
+      }
+    }
+    if (payload.balance !== undefined) {
+      debt.balance = clampToZero(getNumber(payload, 'balance', { required: false, min: 0, defaultValue: debt.balance }));
+      if (debt.balance > debt.principal) {
+        debt.balance = debt.principal;
+      }
+    }
     if (payload.dueDate !== undefined) {
       debt.dueDate = getDate(payload, 'dueDate', { required: false, defaultValue: new Date(debt.dueDate) }).toISOString();
     }
