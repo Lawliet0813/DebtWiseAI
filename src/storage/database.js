@@ -8,8 +8,12 @@ const DEFAULT_DATA = {
   reminders: [],
 };
 
+const DEFAULT_STORAGE_PATH = process.env.DEBTWISE_DB_FILE
+  ? process.env.DEBTWISE_DB_FILE
+  : path.join(process.env.VERCEL ? '/tmp' : process.cwd(), 'data', 'db.json');
+
 class Database {
-  constructor(filePath = path.join(process.cwd(), 'data', 'db.json')) {
+  constructor(filePath = DEFAULT_STORAGE_PATH) {
     this.filePath = filePath;
     this.ensureStorage();
     this.data = this.read();
