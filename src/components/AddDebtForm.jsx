@@ -68,7 +68,7 @@ const AddDebtForm = ({ onClose, onAddDebt, debtTypes }) => {
   // 提交表單
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -76,25 +76,21 @@ const AddDebtForm = ({ onClose, onAddDebt, debtTypes }) => {
     setIsSubmitting(true);
 
     try {
-      const newDebt = {
-        id: Date.now(),
-        ...formData,
+      const monthlyDueDay = parseInt(formData.monthlyDueDay, 10);
+      await onAddDebt({
+        name: formData.name.trim(),
         principal: parseFloat(formData.principal),
-        originalPrincipal: parseFloat(formData.principal),
         interestRate: parseFloat(formData.interestRate),
         minimumPayment: parseFloat(formData.minimumPayment),
-        totalPeriods: needsPeriods(formData.type) ? parseInt(formData.totalPeriods) : 0,
-        remainingPeriods: needsPeriods(formData.type) ? parseInt(formData.totalPeriods) : 0,
-        monthlyDueDay: parseInt(formData.monthlyDueDay),
-        dueDate: getNextDueDate(parseInt(formData.monthlyDueDay)),
-        color: getDebtColor(formData.type),
-        createdAt: new Date().toISOString()
-      };
-
-      await onAddDebt(newDebt);
+        totalPeriods: needsPeriods(formData.type) ? parseInt(formData.totalPeriods, 10) : 0,
+        monthlyDueDay,
+        type: formData.type,
+        subType: formData.subType,
+        dueDate: getNextDueDate(monthlyDueDay),
+      });
       onClose();
     } catch (error) {
-      setErrors({ submit: '新增債務時發生錯誤，請稍後再試' });
+      setErrors({ submit: error?.message || '新增債務時發生錯誤，請稍後再試' });
     } finally {
       setIsSubmitting(false);
     }
@@ -112,21 +108,6 @@ const AddDebtForm = ({ onClose, onAddDebt, debtTypes }) => {
     }
     
     return nextDueDate.toISOString().split('T')[0];
-  };
-
-  // 獲取債務顏色
-  const getDebtColor = (type) => {
-    const colorMap = {
-      '信用卡': 'red',
-      '房貸': 'blue',
-      '車貸': 'green',
-      '學貸': 'yellow',
-      '個人信貸': 'purple',
-      '投資': 'pink',
-      '企業經營': 'indigo',
-      '其他': 'gray'
-    };
-    return colorMap[type] || 'gray';
   };
 
   // 輸入框組件

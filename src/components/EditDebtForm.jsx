@@ -92,40 +92,22 @@ const EditDebtForm = ({ debt, onClose, onEditDebt, debtTypes }) => {
     setIsSubmitting(true);
 
     try {
-      // 計算剩餘期數
-      const newPrincipal = parseFloat(formData.principal);
-      const oldPrincipal = debt.principal;
-      const originalRemainingPeriods = debt.remainingPeriods || 0;
-      
-      // 如果本金減少，按比例調整剩餘期數
-      let newRemainingPeriods = originalRemainingPeriods;
-      if (needsPeriods(formData.type) && originalRemainingPeriods > 0) {
-        const totalPeriods = parseInt(formData.totalPeriods);
-        if (totalPeriods !== debt.totalPeriods) {
-          newRemainingPeriods = totalPeriods;
-        }
-      }
-
-      const updatedDebt = {
-        ...debt,
-        name: formData.name,
-        principal: newPrincipal,
+      const monthlyDueDay = parseInt(formData.monthlyDueDay, 10);
+      await onEditDebt({
+        id: debt.id,
+        name: formData.name.trim(),
+        principal: parseFloat(formData.principal),
         interestRate: parseFloat(formData.interestRate),
         minimumPayment: parseFloat(formData.minimumPayment),
-        totalPeriods: needsPeriods(formData.type) ? parseInt(formData.totalPeriods) : 0,
-        remainingPeriods: needsPeriods(formData.type) ? newRemainingPeriods : 0,
-        monthlyDueDay: parseInt(formData.monthlyDueDay),
+        totalPeriods: needsPeriods(formData.type) ? parseInt(formData.totalPeriods, 10) : 0,
+        monthlyDueDay,
         type: formData.type,
         subType: formData.subType,
-        dueDate: getNextDueDate(parseInt(formData.monthlyDueDay)),
-        color: getDebtColor(formData.type),
-        updatedAt: new Date().toISOString()
-      };
-
-      await onEditDebt(updatedDebt);
+        dueDate: getNextDueDate(monthlyDueDay),
+      });
       onClose();
     } catch (error) {
-      setErrors({ submit: '更新債務時發生錯誤，請稍後再試' });
+      setErrors({ submit: error?.message || '更新債務時發生錯誤，請稍後再試' });
     } finally {
       setIsSubmitting(false);
     }
@@ -143,21 +125,6 @@ const EditDebtForm = ({ debt, onClose, onEditDebt, debtTypes }) => {
     }
     
     return nextDueDate.toISOString().split('T')[0];
-  };
-
-  // 獲取債務顏色
-  const getDebtColor = (type) => {
-    const colorMap = {
-      '信用卡': 'red',
-      '房貸': 'blue',
-      '車貸': 'green',
-      '學貸': 'yellow',
-      '個人信貸': 'purple',
-      '投資': 'pink',
-      '企業經營': 'indigo',
-      '其他': 'gray'
-    };
-    return colorMap[type] || 'gray';
   };
 
   // 輸入框組件
