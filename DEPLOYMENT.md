@@ -129,13 +129,41 @@ git push -u origin main
 ## 🌐 部署選項
 
 ### Vercel（推薦）
-```bash
-# 安裝 Vercel CLI
-npm i -g vercel
 
-# 部署
+本專案已提供以下 Vercel 專用設定：
+
+- `vercel.json`：指定使用 Vite 建置、SPA 路由轉址與輸出目錄。
+- `api/[[...slug]].js`：將現有的 Node.js API 轉換為 Vercel Serverless Function，網址路徑為 `/api/*`。
+- 調整後的 `src/api/client.js`：在生產環境自動呼叫同網域的 `/api` 端點。
+
+#### 1. 安裝並登入 Vercel CLI
+```bash
+npm i -g vercel
+vercel login
+```
+
+#### 2. 連結專案
+```bash
+vercel link
+```
+
+#### 3. 設定環境變數（建議）
+```bash
+# 供後端簽發 JWT 使用
+vercel env add JWT_SECRET
+
+# （選用）自訂存放資料檔案路徑，預設會使用 /tmp/data/db.json
+vercel env add DEBTWISE_DB_FILE
+```
+
+> 提示：若想沿用預設設定，可跳過 `DEBTWISE_DB_FILE` 並在 Vercel 專案設定中將路徑設為 `/tmp/data/db.json` 或其他可讀寫的位置。
+
+#### 4. 部署
+```bash
 vercel --prod
 ```
+
+部署完成後可於 `https://<your-project>.vercel.app` 觀看前端，並透過 `https://<your-project>.vercel.app/api/...` 使用 API。
 
 ### Netlify
 ```bash
