@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { PlusCircle, CreditCard, TrendingDown, Bell, BarChart3, PieChart, Calendar, DollarSign, Target, Zap, Settings, User, LogOut, Home, Plus, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingDown, Bell, BarChart3, DollarSign, Settings, User, LogOut, Plus, Clock } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import AddDebtForm from './components/AddDebtForm';
+import DebtsList from './components/DebtsList';
+import PaymentStrategy from './components/PaymentStrategy';
+import PaymentPlan from './components/PaymentPlan';
+import { compareStrategies, calculateExtraPaymentEffect } from './algorithms/debtStrategies';
 
 const DebtWiseAI = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -8,24 +14,13 @@ const DebtWiseAI = () => {
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [selectedStrategy, setSelectedStrategy] = useState(null);
-  const [paymentPlan, setPaymentPlan] = useState([]);
   const [extraPayment, setExtraPayment] = useState(0);
-  
-  // 新增狀態
+  const [strategiesComparison, setStrategiesComparison] = useState(null);
+  const [monthlyBudget, setMonthlyBudget] = useState(30000);
   const [paymentHistory, setPaymentHistory] = useState([]);
-  const [goals, setGoals] = useState([]);
-  const [budget, setBudget] = useState({ income: 0, expenses: 0, available: 0 });
-  const [emergencyFund, setEmergencyFund] = useState({ target: 0, current: 0 });
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showGoalForm, setShowGoalForm] = useState(false);
-  const [showBudgetForm, setShowBudgetForm] = useState(false);
-  const [showPaymentRecord, setShowPaymentRecord] = useState(false);
   const [achievements, setAchievements] = useState([]);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [showAchievement, setShowAchievement] = useState(null);
-  const [educationProgress, setEducationProgress] = useState({});
-  const [creditScore, setCreditScore] = useState({ current: 650, target: 750 });
+  const [_showNotifications, setShowNotifications] = useState(false);
+  const [_showAchievement, setShowAchievement] = useState(null);
 
   // 債務類型定義
   const debtTypes = {
@@ -54,7 +49,7 @@ const DebtWiseAI = () => {
         '新車貸款',
         '中古車貸款',
         '機車貸款',
-        '商用車買款'
+        '商用車貸款'
       ]
     },
     '學貸': {
@@ -219,7 +214,47 @@ const DebtWiseAI = () => {
         priority: 'low'
       }
     ]);
+
+    // 初始化模擬還款歷史數據
+    const samplePaymentHistory = Array.from({ length: 12 }, (_, i) => ({
+      month: `${2024}-${String(i + 1).padStart(2, '0')}`,
+      totalPaid: 28000 + Math.random() * 5000,
+      interestPaid: 3000 + Math.random() * 1000,
+      principalPaid: 25000 + Math.random() * 4000,
+      remainingBalance: 2470000 - (i * 25000)
+    }));
+    setPaymentHistory(samplePaymentHistory);
   }, []);
+
+  // 新增債務功能
+  const handleAddDebt = async (newDebt) => {
+    setDebts(prev => [...prev, newDebt]);
+    
+    // 觸發成就
+    if (achievements.find(a => a.id === 1 && !a.isUnlocked)) {
+      setAchievements(prev => prev.map(a => 
+        a.id === 1 ? { ...a, isUnlocked: true, unlockedDate: new Date().toISOString() } : a
+      ));
+      setShowAchievement(achievements.find(a => a.id === 1));
+    }
+  };
+
+  // 刪除債務
+  const handleDeleteDebt = (debtId) => {
+    setDebts(prev => prev.filter(debt => debt.id !== debtId));
+  };
+
+  // 計算策略比較
+  useEffect(() => {
+    if (debts.length > 0 && monthlyBudget > 0) {
+      try {
+        const comparison = compareStrategies(debts, monthlyBudget);
+        setStrategiesComparison(comparison);
+      } catch (error) {
+        console.error('策略計算錯誤:', error);
+      }
+    }
+  }, [debts, monthlyBudget]);
 
   // 計算總債務
   const getTotalDebt = () => debts.reduce((sum, debt) => sum + debt.principal, 0);
@@ -373,6 +408,27 @@ const DebtWiseAI = () => {
         </div>
       </div>
 
+      {/* 還款趨勢圖表 */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <TrendingDown className="mr-2 text-blue-500" size={20} />
+          還款趨勢
+        </h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={paymentHistory}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
+              <Legend />
+              <Line type="monotone" dataKey="remainingBalance" stroke="#8884d8" strokeWidth={2} name="剩餘餘額" />
+              <Line type="monotone" dataKey="totalPaid" stroke="#82ca9d" strokeWidth={2} name="月付款" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* 即將到期債務 */}
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-4">
@@ -442,41 +498,116 @@ const DebtWiseAI = () => {
     </div>
   );
 
-  // 簡化版其他頁面組件
-  const DebtsList = () => (
-    <div className="text-center py-12">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">債務管理</h2>
-      <p className="text-gray-600">債務列表功能開發中...</p>
-    </div>
-  );
-
-  const PaymentStrategy = () => (
-    <div className="text-center py-12">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">還款策略</h2>
-      <p className="text-gray-600">AI 智能策略分析功能開發中...</p>
-    </div>
-  );
-
+  // 進度追蹤頁面
   const ProgressTracker = () => (
-    <div className="text-center py-12">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">進度追蹤</h2>
-      <p className="text-gray-600">進度追蹤與目標管理功能開發中...</p>
-    </div>
-  );
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-800">進度追蹤</h2>
 
-  // 添加債務表單 (簡化版)
-  const AddDebtForm = () => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">新增債務</h2>
-        <p className="text-gray-600 mb-4">債務新增功能開發中...</p>
-        <button
-          onClick={() => setShowAddDebt(false)}
-          className="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-        >
-          關閉
-        </button>
+      {/* 總體進度概覽 */}
+      <div className="bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-600 rounded-2xl p-6 text-white shadow-xl">
+        <h3 className="text-xl font-bold mb-4">還款進度總覽</h3>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <p className="text-white/80 text-sm mb-1">整體進度</p>
+            <p className="text-3xl font-bold">{getOverallProgress()}%</p>
+          </div>
+          <div>
+            <p className="text-white/80 text-sm mb-1">已還金額</p>
+            <p className="text-3xl font-bold">
+              ${debts.reduce((sum, debt) => sum + (debt.originalPrincipal - debt.principal), 0).toLocaleString()}
+            </p>
+          </div>
+        </div>
+        <div className="w-full bg-white/20 rounded-full h-4">
+          <div 
+            className="bg-gradient-to-r from-green-400 to-green-500 h-4 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${getOverallProgress()}%` }}
+          />
+        </div>
       </div>
+
+      {/* 個別債務進度 */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-gray-800">個別債務進度</h3>
+        {debts.map(debt => (
+          <div key={debt.id} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <span className="text-2xl mr-3">{debtTypes[debt.type]?.icon}</span>
+                <div>
+                  <h4 className="font-bold text-gray-800">{debt.name}</h4>
+                  <p className="text-sm text-gray-600">{debt.subType}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-800">{getPaymentProgress(debt)}%</p>
+                <p className="text-sm text-gray-600">已完成</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-600">原始金額</p>
+                <p className="font-bold">${debt.originalPrincipal.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">剩餘金額</p>
+                <p className="font-bold">${debt.principal.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">已還金額</p>
+                <p className="font-bold text-green-600">
+                  ${(debt.originalPrincipal - debt.principal).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className={`bg-gradient-to-r from-${debt.color}-400 to-${debt.color}-500 h-3 rounded-full transition-all duration-500`}
+                style={{ width: `${getPaymentProgress(debt)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+
+        {debts.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📈</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">尚無進度可追蹤</h3>
+            <p className="text-gray-600 mb-6">新增債務資料後即可開始追蹤還款進度</p>
+            <button
+              onClick={() => setShowAddDebt(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-300"
+            >
+              新增債務
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 月付款歷史圖表 */}
+      {paymentHistory.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <BarChart3 className="mr-2 text-purple-500" size={20} />
+            月付款分析
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={paymentHistory}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
+                <Legend />
+                <Bar dataKey="principalPaid" stackId="a" fill="#8884d8" name="本金" />
+                <Bar dataKey="interestPaid" stackId="a" fill="#82ca9d" name="利息" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -543,9 +674,40 @@ const DebtWiseAI = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
         {/* 主要內容 */}
         {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'debts' && <DebtsList />}
-        {activeTab === 'strategy' && <PaymentStrategy />}
+        {activeTab === 'debts' && (
+          <DebtsList
+            debts={debts}
+            debtTypes={debtTypes}
+            onDeleteDebt={handleDeleteDebt}
+            onAddDebt={() => setShowAddDebt(true)}
+            getPaymentProgress={getPaymentProgress}
+            getNextDueDate={getNextDueDate}
+            getTotalDebt={getTotalDebt}
+            getTotalMonthlyPayment={getTotalMonthlyPayment}
+            getAverageInterestRate={getAverageInterestRate}
+          />
+        )}
+        {activeTab === 'strategy' && (
+          <PaymentStrategy
+            debts={debts}
+            monthlyBudget={monthlyBudget}
+            setMonthlyBudget={setMonthlyBudget}
+            strategiesComparison={strategiesComparison}
+            extraPayment={extraPayment}
+            setExtraPayment={setExtraPayment}
+            calculateExtraPaymentEffect={calculateExtraPaymentEffect}
+            onAddDebt={() => setShowAddDebt(true)}
+          />
+        )}
         {activeTab === 'progress' && <ProgressTracker />}
+        {activeTab === 'plan' && (
+          <PaymentPlan
+            debts={debts}
+            monthlyBudget={monthlyBudget}
+            extraPayment={extraPayment}
+            strategiesComparison={strategiesComparison}
+          />
+        )}
       </div>
 
       {/* 底部導航 */}
@@ -555,6 +717,7 @@ const DebtWiseAI = () => {
             { id: 'dashboard', name: '總覽', emoji: '🏠' },
             { id: 'debts', name: '債務', emoji: '💳' },
             { id: 'strategy', name: '策略', emoji: '🎯' },
+            { id: 'plan', name: '計劃', emoji: '📅' },
             { id: 'progress', name: '進度', emoji: '📈' }
           ].map(tab => (
             <button
@@ -582,7 +745,13 @@ const DebtWiseAI = () => {
       </button>
 
       {/* 添加債務彈窗 */}
-      {showAddDebt && <AddDebtForm />}
+      {showAddDebt && (
+        <AddDebtForm 
+          onClose={() => setShowAddDebt(false)}
+          onAddDebt={handleAddDebt}
+          debtTypes={debtTypes}
+        />
+      )}
     </div>
   );
 };
