@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   TrendingDown,
   Bell,
@@ -9,6 +9,8 @@ import {
   LogOut,
   Plus,
   Clock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   LineChart,
@@ -200,8 +202,42 @@ const DebtWiseAI = () => {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [initializing, setInitializing] = useState(Boolean(token));
+  const [showPassword, setShowPassword] = useState(false);
+
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   const debtTypes = DEBT_TYPES;
+
+  const handleAuthFieldChange = (field) => (event) => {
+    const { value } = event.target;
+    setAuthForm((prev) => ({ ...prev, [field]: value }));
+    if (authError) {
+      setAuthError('');
+    }
+  };
+
+  const handleAuthModeChange = () => {
+    setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'));
+    setAuthError('');
+    setShowPassword(false);
+    setAuthForm((prev) => ({ ...prev, password: '' }));
+  };
+
+  const focusNextField = (event, nextFieldRef) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    const node = nextFieldRef?.current;
+    if (node && typeof node.focus === 'function') {
+      node.focus();
+      if (typeof node.select === 'function') {
+        node.select();
+      }
+    }
+  };
 
   const refreshAchievements = (debtList, { showUnlockToast = false } = {}) => {
     let unlockedAchievement = null;
@@ -252,6 +288,19 @@ const DebtWiseAI = () => {
       localStorage.removeItem(STORAGE_TOKEN_KEY);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (token || initializing) {
+      return;
+    }
+    const target =
+      authMode === 'register'
+        ? nameInputRef.current || emailInputRef.current
+        : emailInputRef.current;
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+    }
+  }, [token, authMode, initializing]);
 
   useEffect(() => {
     if (!token) {
@@ -387,28 +436,39 @@ const DebtWiseAI = () => {
 
   const handleAuthSubmit = async (event) => {
     event.preventDefault();
-    if (!authForm.email || !authForm.password || (authMode === 'register' && !authForm.name)) {
+    const sanitizedEmail = authForm.email.trim();
+    const sanitizedName = authForm.name.trim();
+    const passwordValue = authForm.password;
+
+    if (!sanitizedEmail || !passwordValue || (authMode === 'register' && !sanitizedName)) {
       setAuthError('請完整填寫表單資訊');
       return;
     }
+    setAuthForm((prev) => ({
+      ...prev,
+      email: sanitizedEmail,
+      name: sanitizedName,
+    }));
     setAuthError('');
     setAuthLoading(true);
     try {
       if (authMode === 'login') {
-        const result = await loginApi({ email: authForm.email, password: authForm.password });
+        const result = await loginApi({ email: sanitizedEmail, password: passwordValue });
         setToken(result.token);
         setCurrentUser(result.user);
         setIsPremium(result.user.membership === 'premium');
       } else {
         const result = await registerApi({
-          name: authForm.name,
-          email: authForm.email,
-          password: authForm.password,
+          name: sanitizedName,
+          email: sanitizedEmail,
+          password: passwordValue,
         });
         setToken(result.token);
         setCurrentUser(result.user);
         setIsPremium(result.user.membership === 'premium');
       }
+      setAuthForm({ name: '', email: '', password: '' });
+      setShowPassword(false);
     } catch (error) {
       setAuthError(error?.message || '驗證失敗，請稍後再試');
     } finally {
@@ -438,6 +498,8 @@ const DebtWiseAI = () => {
       setToken(result.token);
       setCurrentUser(result.user);
       setIsPremium(result.user.membership === 'premium');
+      setAuthForm({ name: '', email: '', password: '' });
+      setShowPassword(false);
     } catch (error) {
       setAuthError(error?.message || '無法啟動演示模式，請稍後再試');
     } finally {
@@ -524,6 +586,7 @@ const DebtWiseAI = () => {
     setActiveTab('dashboard');
     setAuthMode('login');
     setAuthForm({ name: '', email: '', password: '' });
+    setShowPassword(false);
   };
 
   const handleToggleMembership = async () => {
@@ -594,94 +657,145 @@ const DebtWiseAI = () => {
     });
   };
 
-  const LoginForm = () => (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 w-full max-w-md border border-white/20">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <DollarSign className="text-white" size={32} />
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            DebtWise AI
-          </h1>
-          <p className="text-gray-600">智能債務管理助手</p>
-        </div>
+  const LoginForm = () => {
+    const passwordAutoComplete = authMode === 'login' ? 'current-password' : 'new-password';
+    const errorMessageId = authError ? 'auth-error' : undefined;
 
-        <form onSubmit={handleAuthSubmit} className="space-y-4">
-          {authMode === 'register' && (
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 w-full max-w-md border border-white/20">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <DollarSign className="text-white" size={32} />
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+              DebtWise AI
+            </h1>
+            <p className="text-gray-600">智能債務管理助手</p>
+          </div>
+
+          <form onSubmit={handleAuthSubmit} className="space-y-4" noValidate>
+            {authMode === 'register' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="auth-name">
+                  姓名
+                </label>
+                <input
+                  type="text"
+                  value={authForm.name}
+                  ref={nameInputRef}
+                  id="auth-name"
+                  name="name"
+                  autoComplete="name"
+                  autoCapitalize="words"
+                  onChange={handleAuthFieldChange('name')}
+                  onKeyDown={(event) => focusNextField(event, emailInputRef)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="您的名字"
+                  disabled={authLoading}
+                  aria-invalid={Boolean(authError)}
+                  aria-describedby={errorMessageId}
+                />
+              </div>
+            )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">姓名</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="auth-email">
+                Email
+              </label>
               <input
-                type="text"
-                value={authForm.name}
-                onChange={(event) => setAuthForm({ ...authForm, name: event.target.value })}
+                type="email"
+                value={authForm.email}
+                ref={emailInputRef}
+                id="auth-email"
+                name="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+                onChange={handleAuthFieldChange('email')}
+                onKeyDown={(event) => focusNextField(event, passwordInputRef)}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="您的名字"
+                placeholder="example@email.com"
                 disabled={authLoading}
+                aria-invalid={Boolean(authError)}
+                aria-describedby={errorMessageId}
               />
             </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={authForm.email}
-              onChange={(event) => setAuthForm({ ...authForm, email: event.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="example@email.com"
-              disabled={authLoading}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">密碼</label>
-            <input
-              type="password"
-              value={authForm.password}
-              onChange={(event) => setAuthForm({ ...authForm, password: event.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="至少 8 個字元"
-              disabled={authLoading}
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="auth-password">
+                密碼
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={authForm.password}
+                  ref={passwordInputRef}
+                  id="auth-password"
+                  name="password"
+                  autoComplete={passwordAutoComplete}
+                  onChange={handleAuthFieldChange('password')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="至少 8 個字元"
+                  disabled={authLoading}
+                  aria-invalid={Boolean(authError)}
+                  aria-describedby={errorMessageId}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded"
+                  aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
 
-          {authError && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">{authError}</div>
-          )}
+            {authError && (
+              <div
+                className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm"
+                id={errorMessageId}
+                role="alert"
+                aria-live="assertive"
+              >
+                {authError}
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={authLoading}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {authLoading ? '處理中...' : authMode === 'login' ? '登入' : '建立帳號'}
-          </button>
-        </form>
-
-        <div className="mt-6 space-y-3">
-          <button
-            onClick={handleDemoLogin}
-            disabled={authLoading}
-            className="w-full border border-gray-300 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors backdrop-blur-sm disabled:opacity-70"
-          >
-            啟動演示模式
-          </button>
-          <p className="text-sm text-center text-gray-600">
-            {authMode === 'login' ? '還沒有帳號？' : '已經有帳號了？'}
             <button
-              type="button"
-              onClick={() => {
-                setAuthMode(authMode === 'login' ? 'register' : 'login');
-                setAuthError('');
-              }}
-              className="ml-2 text-purple-600 font-medium"
+              type="submit"
+              disabled={authLoading}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {authMode === 'login' ? '立即註冊' : '前往登入'}
+              {authLoading ? '處理中...' : authMode === 'login' ? '登入' : '建立帳號'}
             </button>
-          </p>
+          </form>
+
+          <div className="mt-6 space-y-3">
+            <button
+              onClick={handleDemoLogin}
+              disabled={authLoading}
+              className="w-full border border-gray-300 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors backdrop-blur-sm disabled:opacity-70"
+            >
+              啟動演示模式
+            </button>
+            <p className="text-sm text-center text-gray-600">
+              {authMode === 'login' ? '還沒有帳號？' : '已經有帳號了？'}
+              <button
+                type="button"
+                onClick={handleAuthModeChange}
+                className="ml-2 text-purple-600 font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded"
+              >
+                {authMode === 'login' ? '立即註冊' : '前往登入'}
+              </button>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const Dashboard = () => (
     <div className="space-y-6">
