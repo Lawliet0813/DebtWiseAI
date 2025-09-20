@@ -53,7 +53,7 @@ function createDebtService(context) {
   }
 
   function createDebt(user, payload) {
-    if (user.membership !== 'premium') {
+    if (user.membership !== 'premium' && user.role !== 'admin') {
       const count = db.data.debts.filter((debt) => debt.userId === user.id).length;
       if (count >= config.freeDebtLimit) {
         throw new AppError(403, `Free membership allows up to ${config.freeDebtLimit} debts.`);

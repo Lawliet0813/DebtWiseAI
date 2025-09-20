@@ -46,6 +46,7 @@ The backend exposes stateless JSON endpoints; clients authenticate using JWT bea
     timeOfDay: "HH:MM"
   },
   membership: "free" | "premium",
+  role: "user" | "admin",
   createdAt: ISODate,
   updatedAt: ISODate
 }

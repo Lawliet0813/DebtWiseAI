@@ -1,6 +1,6 @@
 function sanitizeUser(user) {
-  const { passwordHash, ...publicUser } = user;
-  return publicUser;
+  const { passwordHash, role, ...publicUser } = user;
+  return { ...publicUser, role: role || 'user' };
 }
 
 export {

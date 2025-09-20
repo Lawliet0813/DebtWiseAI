@@ -1,6 +1,131 @@
 {
-  "users": [],
-  "debts": [],
-  "payments": [],
-  "reminders": []
+  "users": [
+    {
+      "id": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "email": "demo@debtwise.ai",
+      "passwordHash": "dec2c0f38a8273673f8c9c41b71002b1:9ce31db50ac72bc25597f4de8364c0f95137fd3670fa265e3b7aebd2d294d448f666ac82a6aeea3323ad1d416af11bc06135287e70cfdd653eff2e3a913442d8",
+      "name": "DebtWise Demo",
+      "income": 85000,
+      "expenses": 42000,
+      "reminderPreferences": {
+        "daysBeforeDue": 3,
+        "timeOfDay": "09:00"
+      },
+      "membership": "premium",
+      "role": "user",
+      "createdAt": "2024-01-05T08:00:00.000Z",
+      "updatedAt": "2024-05-20T09:30:00.000Z"
+    },
+    {
+      "id": "dd558680-a5b9-471a-84fa-d039eadc2462",
+      "email": "admin@debtwise.ai",
+      "passwordHash": "059f3186c752ef549b3b1965548b2ab7:df196038594b49bce614f92a5f74cabad11f4a4c56a2f23323a6595d4579d7e1ea260adfcbb6a41599a2dc32644c1ddabe3a55a6de6774a37934557201db3cc3",
+      "name": "DebtWise 管理員",
+      "income": 0,
+      "expenses": 0,
+      "reminderPreferences": {
+        "daysBeforeDue": 1,
+        "timeOfDay": "08:00"
+      },
+      "membership": "premium",
+      "role": "admin",
+      "createdAt": "2024-01-10T08:00:00.000Z",
+      "updatedAt": "2024-05-20T10:00:00.000Z"
+    }
+  ],
+  "debts": [
+    {
+      "id": "demo-debt-credit-card",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "name": "昇陽銀行信用卡",
+      "principal": 68000,
+      "apr": 18.7,
+      "minimumPayment": 3200,
+      "dueDate": "2024-07-25T00:00:00.000Z",
+      "type": "credit_card",
+      "balance": 41000,
+      "totalPaid": 27000,
+      "createdAt": "2023-11-20T10:00:00.000Z",
+      "updatedAt": "2024-05-10T12:00:00.000Z",
+      "lastPaymentAt": "2024-05-10T12:00:00.000Z"
+    },
+    {
+      "id": "demo-debt-loan",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "name": "家用整合貸款",
+      "principal": 250000,
+      "apr": 9.5,
+      "minimumPayment": 7500,
+      "dueDate": "2024-07-18T00:00:00.000Z",
+      "type": "loan",
+      "balance": 198000,
+      "totalPaid": 52000,
+      "createdAt": "2023-09-01T08:00:00.000Z",
+      "updatedAt": "2024-05-05T09:30:00.000Z",
+      "lastPaymentAt": "2024-05-05T09:30:00.000Z"
+    },
+    {
+      "id": "demo-debt-student",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "name": "在職進修學貸",
+      "principal": 120000,
+      "apr": 2.5,
+      "minimumPayment": 4000,
+      "dueDate": "2024-07-05T00:00:00.000Z",
+      "type": "student",
+      "balance": 96000,
+      "totalPaid": 24000,
+      "createdAt": "2022-02-15T09:00:00.000Z",
+      "updatedAt": "2024-04-28T11:45:00.000Z",
+      "lastPaymentAt": "2024-04-28T11:45:00.000Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "demo-payment-1",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "debtId": "demo-debt-credit-card",
+      "amount": 3200,
+      "paidAt": "2024-05-10T12:00:00.000Z",
+      "createdAt": "2024-05-10T12:05:00.000Z",
+      "note": "五月份信用卡繳款"
+    },
+    {
+      "id": "demo-payment-2",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "debtId": "demo-debt-credit-card",
+      "amount": 2800,
+      "paidAt": "2024-04-10T12:00:00.000Z",
+      "createdAt": "2024-04-10T12:05:00.000Z",
+      "note": "四月份信用卡繳款"
+    },
+    {
+      "id": "demo-payment-3",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "debtId": "demo-debt-loan",
+      "amount": 7500,
+      "paidAt": "2024-05-05T09:30:00.000Z",
+      "createdAt": "2024-05-05T09:35:00.000Z",
+      "note": "五月份貸款繳款"
+    },
+    {
+      "id": "demo-payment-4",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "debtId": "demo-debt-student",
+      "amount": 4000,
+      "paidAt": "2024-04-28T11:45:00.000Z",
+      "createdAt": "2024-04-28T11:50:00.000Z",
+      "note": "四月份學貸繳款"
+    }
+  ],
+  "reminders": [
+    {
+      "id": "demo-reminder-1",
+      "userId": "2f5f6b5c-d8f2-4dbb-9fb7-9a2de3ab1234",
+      "debtId": "demo-debt-credit-card",
+      "sendAt": "2024-07-22T01:00:00.000Z",
+      "createdAt": "2024-05-01T03:00:00.000Z",
+      "status": "scheduled"
+    }
+  ]
 }

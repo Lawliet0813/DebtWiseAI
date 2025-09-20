@@ -9,9 +9,13 @@ function createAuthService(context) {
   const { db, config } = context;
 
   function generateToken(user) {
-    return sign({ sub: user.id, membership: user.membership }, config.jwtSecret, {
-      expiresIn: config.tokenExpiresInSeconds,
-    });
+    return sign(
+      { sub: user.id, membership: user.membership, role: user.role || 'user' },
+      config.jwtSecret,
+      {
+        expiresIn: config.tokenExpiresInSeconds,
+      },
+    );
   }
 
   function register(payload) {
@@ -37,6 +41,7 @@ function createAuthService(context) {
         timeOfDay: payload.reminderTime || '09:00',
       },
       membership: 'free',
+      role: 'user',
       createdAt: now,
       updatedAt: now,
     };
