@@ -139,6 +139,13 @@ function mapLabelToApiType(label) {
   return TYPE_CODE_BY_LABEL[label] || 'other';
 }
 
+function isPrivilegedMember(user) {
+  if (!user || typeof user !== 'object') {
+    return false;
+  }
+  return user.membership === 'premium' || user.role === 'admin';
+}
+
 function extractDatePart(value) {
   if (!value) {
     return '';
@@ -320,8 +327,9 @@ const DebtWiseAI = () => {
           return;
         }
         const mappedDebts = (debtsResponse?.debts || []).map((debt) => mapApiDebtToUi(debt));
-        setCurrentUser(userResponse.user);
-        setIsPremium(userResponse.user.membership === 'premium');
+        const profile = userResponse?.user || null;
+        setCurrentUser(profile);
+        setIsPremium(isPrivilegedMember(profile));
         setDebts(mappedDebts);
         refreshAchievements(mappedDebts);
         setActiveTab('dashboard');
@@ -454,18 +462,26 @@ const DebtWiseAI = () => {
     try {
       if (authMode === 'login') {
         const result = await loginApi({ email: sanitizedEmail, password: passwordValue });
+        if (!result || typeof result !== 'object' || !result.token) {
+          throw new Error('登入回應格式不正確，請稍後再試');
+        }
         setToken(result.token);
-        setCurrentUser(result.user);
-        setIsPremium(result.user.membership === 'premium');
+        const authenticatedUser = result.user && typeof result.user === 'object' ? result.user : null;
+        setCurrentUser(authenticatedUser);
+        setIsPremium(isPrivilegedMember(authenticatedUser));
       } else {
         const result = await registerApi({
           name: sanitizedName,
           email: sanitizedEmail,
           password: passwordValue,
         });
+        if (!result || typeof result !== 'object' || !result.token) {
+          throw new Error('註冊回應格式不正確，請稍後再試');
+        }
         setToken(result.token);
-        setCurrentUser(result.user);
-        setIsPremium(result.user.membership === 'premium');
+        const registeredUser = result.user && typeof result.user === 'object' ? result.user : null;
+        setCurrentUser(registeredUser);
+        setIsPremium(isPrivilegedMember(registeredUser));
       }
       setAuthForm({ name: '', email: '', password: '' });
       setShowPassword(false);
@@ -487,17 +503,21 @@ const DebtWiseAI = () => {
     try {
       let result;
       try {
-        result = await registerApi(demoAccount);
+        result = await loginApi({ email: demoAccount.email, password: demoAccount.password });
       } catch (error) {
-        if (error instanceof ApiError && error.status === 409) {
-          result = await loginApi({ email: demoAccount.email, password: demoAccount.password });
+        if (error instanceof ApiError && error.status === 401) {
+          result = await registerApi(demoAccount);
         } else {
           throw error;
         }
       }
+      if (!result || typeof result !== 'object' || !result.token) {
+        throw new Error('演示模式回應格式不正確');
+      }
       setToken(result.token);
-      setCurrentUser(result.user);
-      setIsPremium(result.user.membership === 'premium');
+      const demoUser = result.user && typeof result.user === 'object' ? result.user : null;
+      setCurrentUser(demoUser);
+      setIsPremium(isPrivilegedMember(demoUser));
       setAuthForm({ name: '', email: '', password: '' });
       setShowPassword(false);
     } catch (error) {
@@ -593,12 +613,18 @@ const DebtWiseAI = () => {
     if (!token || !currentUser) {
       return;
     }
+    if (currentUser.role === 'admin') {
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('管理員帳號已具備所有功能，無需切換會員方案。');
+      }
+      return;
+    }
     const nextMembership = isPremium ? 'free' : 'premium';
     try {
       const response = await updateMembershipApi(token, nextMembership);
       const updatedUser = response?.user || { ...currentUser, membership: nextMembership };
       setCurrentUser(updatedUser);
-      setIsPremium(updatedUser.membership === 'premium');
+      setIsPremium(isPrivilegedMember(updatedUser));
     } catch (error) {
       console.error('更新會員狀態失敗', error);
     }
@@ -657,7 +683,7 @@ const DebtWiseAI = () => {
     });
   };
 
-  const LoginForm = () => {
+  const renderAuthScreen = () => {
     const passwordAutoComplete = authMode === 'login' ? 'current-password' : 'new-password';
     const errorMessageId = authError ? 'auth-error' : undefined;
 
@@ -1007,7 +1033,7 @@ const DebtWiseAI = () => {
         </div>
       );
     }
-    return <LoginForm />;
+    return renderAuthScreen();
   }
 
   return (
@@ -1047,7 +1073,14 @@ const DebtWiseAI = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
                   <User className="text-white" size={16} />
                 </div>
-                <span className="text-sm font-medium text-gray-700">{currentUser?.name || currentUser?.email}</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-medium text-gray-700">{currentUser?.name || currentUser?.email}</span>
+                  {currentUser?.role === 'admin' && (
+                    <span className="mt-0.5 inline-flex items-center px-2 py-0.5 text-[11px] font-semibold tracking-wide text-purple-700 bg-purple-100 rounded-full">
+                      管理員
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={handleLogout}

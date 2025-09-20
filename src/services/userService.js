@@ -10,6 +10,9 @@ function createUserService(context) {
     if (!user) {
       throw new AppError(404, 'User not found.');
     }
+    if (!user.role) {
+      user.role = 'user';
+    }
     return user;
   }
 
@@ -44,6 +47,9 @@ function createUserService(context) {
     const user = getById(userId);
     if (!['free', 'premium'].includes(membership)) {
       throw new AppError(400, 'Membership must be either free or premium.');
+    }
+    if (user.role === 'admin' && membership !== 'premium') {
+      throw new AppError(400, 'Admin accounts must remain premium.');
     }
     user.membership = membership;
     user.updatedAt = new Date().toISOString();

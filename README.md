@@ -238,6 +238,11 @@ The API listens on port `4000` by default. Override with `PORT=5000 npm run dev`
 
 Authentication relies on a bearer token returned by login/registration responses.
 
+### Default Accounts
+
+- Demo 模式：`demo@debtwise.ai` / `DemoPass123!`
+- 管理員帳號：`admin@debtwise.ai` / `AdminPass123!`（擁有完整 Premium 功能與管理權限，無法降級方案）
+
 ## Running Tests
 
 ```bash

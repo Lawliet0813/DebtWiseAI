@@ -1,4 +1,5 @@
 export type MembershipType = 'free' | 'premium';
+export type UserRole = 'user' | 'admin';
 export type DebtType =
   | 'credit_card'
   | 'auto_loan'
@@ -16,6 +17,7 @@ export interface UserProfile {
   email: string;
   name?: string;
   membership_type: MembershipType;
+  role: UserRole;
   created_at: string;
   updated_at: string;
 }
