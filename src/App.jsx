@@ -487,10 +487,10 @@ const DebtWiseAI = () => {
     try {
       let result;
       try {
-        result = await registerApi(demoAccount);
+        result = await loginApi({ email: demoAccount.email, password: demoAccount.password });
       } catch (error) {
-        if (error instanceof ApiError && error.status === 409) {
-          result = await loginApi({ email: demoAccount.email, password: demoAccount.password });
+        if (error instanceof ApiError && error.status === 401) {
+          result = await registerApi(demoAccount);
         } else {
           throw error;
         }
