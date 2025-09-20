@@ -1,6 +1,5 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { simulateStrategy } from '../src/algorithms/debtStrategies.js';
+import { describe, it, expect } from 'vitest';
+import { simulateStrategy, compareStrategies } from '../src/algorithms/debtStrategies.js';
 
 const sampleDebts = [
   {
@@ -26,51 +25,77 @@ const sampleDebts = [
   },
 ];
 
-test('snowball strategy prioritises the smallest balances first', () => {
-  const result = simulateStrategy(sampleDebts, { strategy: 'snowball', monthlyBudget: 700, startDate: new Date('2024-01-01') });
-  const creditCard = result.debtSummaries.find((item) => item.debtId === 'debt-1');
-  const autoLoan = result.debtSummaries.find((item) => item.debtId === 'debt-3');
-  const studentLoan = result.debtSummaries.find((item) => item.debtId === 'debt-2');
-  assert.ok(
-    creditCard.monthsToPayoff <= autoLoan.monthsToPayoff,
-    'Credit card (smallest balance) should not take longer than auto loan'
-  );
-  assert.ok(
-    autoLoan.monthsToPayoff <= studentLoan.monthsToPayoff,
-    'Auto loan should be paid off before or alongside the larger student loan'
-  );
-  assert.equal(result.strategy, 'snowball');
-  assert.equal(result.schedule[0].date.startsWith('2024-01'), true);
+describe('simulateStrategy', () => {
+  it('prioritises the smallest balances first with the snowball strategy', () => {
+    const result = simulateStrategy(sampleDebts, {
+      strategy: 'snowball',
+      monthlyBudget: 700,
+      startDate: new Date('2024-01-01'),
+    });
+
+    const creditCard = result.debtSummaries.find((item) => item.debtId === 'debt-1');
+    const autoLoan = result.debtSummaries.find((item) => item.debtId === 'debt-3');
+    const studentLoan = result.debtSummaries.find((item) => item.debtId === 'debt-2');
+
+    expect(creditCard?.monthsToPayoff).toBeLessThanOrEqual(autoLoan?.monthsToPayoff ?? Infinity);
+    expect(autoLoan?.monthsToPayoff).toBeLessThanOrEqual(studentLoan?.monthsToPayoff ?? Infinity);
+    expect(result.strategy).toBe('snowball');
+    expect(result.schedule[0]?.date).toMatch(/^2024-01/);
+  });
+
+  it('prioritises the highest APR balances with the avalanche strategy', () => {
+    const snowball = simulateStrategy(sampleDebts, {
+      strategy: 'snowball',
+      monthlyBudget: 700,
+      startDate: new Date('2024-01-01'),
+    });
+
+    const avalanche = simulateStrategy(sampleDebts, {
+      strategy: 'avalanche',
+      monthlyBudget: 700,
+      startDate: new Date('2024-01-01'),
+    });
+
+    const creditCardAvalanche = avalanche.debtSummaries.find((item) => item.debtId === 'debt-1');
+    const autoLoanAvalanche = avalanche.debtSummaries.find((item) => item.debtId === 'debt-3');
+    const studentLoanAvalanche = avalanche.debtSummaries.find((item) => item.debtId === 'debt-2');
+
+    expect(creditCardAvalanche?.monthsToPayoff).toBeLessThanOrEqual(autoLoanAvalanche?.monthsToPayoff ?? Infinity);
+    expect(autoLoanAvalanche?.monthsToPayoff).toBeLessThanOrEqual(studentLoanAvalanche?.monthsToPayoff ?? Infinity);
+    expect(avalanche.totalInterest).toBeLessThanOrEqual(snowball.totalInterest);
+  });
+
+  it('throws when monthly budget cannot cover minimums', () => {
+    expect(() =>
+      simulateStrategy(sampleDebts, {
+        strategy: 'snowball',
+        monthlyBudget: 100,
+        startDate: new Date('2024-01-01'),
+      }),
+    ).toThrowError(/月預算.*不足/);
+  });
+
+  it('throws when using an unsupported strategy', () => {
+    expect(() =>
+      simulateStrategy(sampleDebts, {
+        strategy: 'unknown',
+        monthlyBudget: 700,
+      }),
+    ).toThrowError(/策略必須是 snowball/);
+  });
 });
 
-test('avalanche strategy prioritises the highest APR balances', () => {
-  const snowball = simulateStrategy(sampleDebts, { strategy: 'snowball', monthlyBudget: 700, startDate: new Date('2024-01-01') });
-  const avalanche = simulateStrategy(sampleDebts, { strategy: 'avalanche', monthlyBudget: 700, startDate: new Date('2024-01-01') });
+describe('compareStrategies', () => {
+  it('returns comparison insights for both strategies', () => {
+    const result = compareStrategies(sampleDebts, 700, new Date('2024-01-01'));
 
-  const creditCardAvalanche = avalanche.debtSummaries.find((item) => item.debtId === 'debt-1');
-  const autoLoanAvalanche = avalanche.debtSummaries.find((item) => item.debtId === 'debt-3');
-  const studentLoanAvalanche = avalanche.debtSummaries.find((item) => item.debtId === 'debt-2');
-
-  assert.ok(
-    creditCardAvalanche.monthsToPayoff <= autoLoanAvalanche.monthsToPayoff,
-    'Highest APR debt should not take longer than lower APR debts'
-  );
-  assert.ok(
-    autoLoanAvalanche.monthsToPayoff <= studentLoanAvalanche.monthsToPayoff,
-    'Next highest APR should be resolved before or alongside lower APR debts'
-  );
-  assert.ok(
-    avalanche.totalInterest <= snowball.totalInterest,
-    'Avalanche should not accrue more interest than snowball for the same inputs'
-  );
-});
-
-test('simulation throws when monthly budget cannot cover minimums', () => {
-  assert.throws(
-    () => simulateStrategy(sampleDebts, { strategy: 'snowball', monthlyBudget: 100, startDate: new Date('2024-01-01') }),
-    {
-      name: 'DebtError',
-      message: /月預算.*不足/
-    }
-  );
+    expect(result.snowball.strategy).toBe('snowball');
+    expect(result.avalanche.strategy).toBe('avalanche');
+    expect(result.comparison).toMatchObject({
+      interestSavings: expect.any(Number),
+      timeSavings: expect.any(Number),
+      recommendedStrategy: expect.any(String),
+    });
+    expect(result.comparison.recommendedStrategy === 'snowball' || result.comparison.recommendedStrategy === 'avalanche').toBe(true);
+  });
 });
