@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DollarSign, Target, Zap, CheckCircle, TrendingDown, BarChart3,
   AlertCircle, Lightbulb, RefreshCw, Plus
@@ -15,6 +15,52 @@ const PaymentStrategy = ({
   onAddDebt
 }) => {
   const [showComparison, setShowComparison] = useState(false);
+  const [monthlyBudgetInput, setMonthlyBudgetInput] = useState(() =>
+    monthlyBudget ? String(monthlyBudget) : '',
+  );
+  const [extraPaymentInput, setExtraPaymentInput] = useState(() =>
+    extraPayment ? String(extraPayment) : '',
+  );
+
+  useEffect(() => {
+    if (monthlyBudgetInput === '' && monthlyBudget === 0) {
+      return;
+    }
+    if (!Number.isNaN(parseFloat(monthlyBudgetInput)) && parseFloat(monthlyBudgetInput) === monthlyBudget) {
+      return;
+    }
+    setMonthlyBudgetInput(monthlyBudget === 0 ? '' : String(monthlyBudget));
+  }, [monthlyBudget, monthlyBudgetInput]);
+
+  useEffect(() => {
+    if (extraPaymentInput === '' && extraPayment === 0) {
+      return;
+    }
+    if (!Number.isNaN(parseFloat(extraPaymentInput)) && parseFloat(extraPaymentInput) === extraPayment) {
+      return;
+    }
+    setExtraPaymentInput(extraPayment === 0 ? '' : String(extraPayment));
+  }, [extraPayment, extraPaymentInput]);
+
+  const handleMonthlyBudgetChange = (event) => {
+    const value = event.target.value;
+    if (!/^\d*(\.\d*)?$/.test(value)) {
+      return;
+    }
+    setMonthlyBudgetInput(value);
+    const parsed = parseFloat(value);
+    setMonthlyBudget(Number.isNaN(parsed) ? 0 : parsed);
+  };
+
+  const handleExtraPaymentChange = (event) => {
+    const value = event.target.value;
+    if (!/^\d*(\.\d*)?$/.test(value)) {
+      return;
+    }
+    setExtraPaymentInput(value);
+    const parsed = parseFloat(value);
+    setExtraPayment(Number.isNaN(parsed) ? 0 : parsed);
+  };
 
   // 如果沒有債務，顯示添加債務的提示
   if (!debts || debts.length === 0) {
@@ -70,9 +116,10 @@ const PaymentStrategy = ({
             <div className="relative">
               <DollarSign className="absolute left-3 top-3 text-gray-400" size={20} />
               <input
-                type="number"
-                value={monthlyBudget}
-                onChange={(e) => setMonthlyBudget(Number(e.target.value) || 0)}
+                type="text"
+                inputMode="decimal"
+                value={monthlyBudgetInput}
+                onChange={handleMonthlyBudgetChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="輸入月預算"
               />
@@ -86,9 +133,10 @@ const PaymentStrategy = ({
             <div className="relative">
               <Plus className="absolute left-3 top-3 text-gray-400" size={20} />
               <input
-                type="number"
-                value={extraPayment}
-                onChange={(e) => setExtraPayment(Number(e.target.value) || 0)}
+                type="text"
+                inputMode="decimal"
+                value={extraPaymentInput}
+                onChange={handleExtraPaymentChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="額外還款金額"
               />
