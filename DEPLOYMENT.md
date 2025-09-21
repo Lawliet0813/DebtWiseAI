@@ -149,14 +149,18 @@ vercel link
 
 #### 3. 設定環境變數（建議）
 ```bash
-# 供後端簽發 JWT 使用
+# JWT 簽發密鑰
 vercel env add JWT_SECRET
 
-# （選用）自訂存放資料檔案路徑，預設會使用 /tmp/data/db.json
-vercel env add DEBTWISE_DB_FILE
+# Supabase 連線資訊
+vercel env add SUPABASE_URL
+vercel env add SUPABASE_SERVICE_ROLE_KEY
+
+# （選用）其他設定
+vercel env add SUPABASE_SCHEMA
 ```
 
-> 提示：若想沿用預設設定，可跳過 `DEBTWISE_DB_FILE` 並在 Vercel 專案設定中將路徑設為 `/tmp/data/db.json` 或其他可讀寫的位置。
+> 提示：若暫時無法提供 Supabase 連線資訊，系統會回退到 `data/db.json` 檔案，但僅建議用於本地測試環境。
 
 #### 4. 部署
 ```bash

@@ -6,7 +6,7 @@ import createServices from './services/index.js';
 import registerRoutes from './routes/index.js';
 
 function buildRouterContext() {
-  const db = new Database();
+  const db = new Database(config);
   const baseContext = { config, db };
   const services = createServices(baseContext);
   return { ...baseContext, services };

@@ -126,7 +126,7 @@ class Router {
       };
       if (route.options.auth) {
         const authorization = req.headers.authorization || req.headers.Authorization;
-        const user = this.context.services.auth.authenticate(authorization);
+        const user = await this.context.services.auth.authenticate(authorization);
         requestContext.user = user;
       }
       const result = await route.handler(requestContext);

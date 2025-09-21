@@ -14,12 +14,12 @@ function createAuthService(context) {
     });
   }
 
-  function register(payload) {
+  async function register(payload) {
     const email = ensureEmail(getString(payload, 'email', { minLength: 3 }));
     const password = getString(payload, 'password', { minLength: 8 });
     const name = getString(payload, 'name', { required: false, defaultValue: '' });
 
-    const existing = db.data.users.find((user) => user.email === email);
+    const existing = await db.getUserByEmail(email);
     if (existing) {
       throw new AppError(409, 'Email is already registered.');
     }
@@ -40,20 +40,18 @@ function createAuthService(context) {
       createdAt: now,
       updatedAt: now,
     };
-    db.data.users.push(user);
-    db.write();
-
-    const token = generateToken(user);
+    const storedUser = await db.createUser(user);
+    const token = generateToken(storedUser || user);
     return {
       token,
-      user: sanitizeUser(user),
+      user: sanitizeUser(storedUser || user),
     };
   }
 
-  function login(payload) {
+  async function login(payload) {
     const email = ensureEmail(getString(payload, 'email', { minLength: 3 }));
     const password = getString(payload, 'password', { minLength: 8 });
-    const user = db.data.users.find((record) => record.email === email);
+    const user = await db.getUserByEmail(email);
     if (!user || !verifyPassword(password, user.passwordHash)) {
       throw new AppError(401, 'Invalid email or password.');
     }
@@ -64,22 +62,22 @@ function createAuthService(context) {
     };
   }
 
-  function authenticate(authorizationHeader) {
+  async function authenticate(authorizationHeader) {
     if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
       throw new AppError(401, 'Authentication token is missing.');
     }
     const token = authorizationHeader.slice('Bearer '.length);
     const payload = verify(token, config.jwtSecret);
-    const user = db.data.users.find((record) => record.id === payload.sub);
+    const user = await db.getUserById(payload.sub);
     if (!user) {
       throw new AppError(401, 'User not found for provided token.');
     }
     return sanitizeUser(user);
   }
 
-  function requestPasswordReset(payload) {
+  async function requestPasswordReset(payload) {
     const email = ensureEmail(getString(payload, 'email', { minLength: 3 }));
-    const user = db.data.users.find((record) => record.email === email);
+    const user = await db.getUserByEmail(email);
     if (!user) {
       throw new AppError(404, 'User with provided email was not found.');
     }
