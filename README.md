@@ -1,13 +1,8 @@
-<<<<<<< ours
 # DebtWise AI - 智能債務管理系統
 
 > 🤖 使用 AI 技術幫助您制定最佳還款策略，實現財務自由的智能債務管理助手
 
-![DebtWise AI Logo](https://img.shields.io/badge/DebtWise-AI-blue?style=for-the-badge&logo=react)
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![React](https://img.shields.io/badge/React-18.2.0-blue?logo=react)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-4.4.5-646CFF?logo=vite)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.0-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+![DebtWise AI Logo](https://img.shields.io/badge/DebtWise-AI-blue?style=for-the-badge&logo=react) [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/) [![React](https://img.shields.io/badge/React-18.2.0-blue?logo=react)](https://reactjs.org/) [![Vite](https://img.shields.io/badge/Vite-4.4.5-646CFF?logo=vite)](https://vitejs.dev/) [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.0-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 
 ## ✨ 核心功能
 
@@ -40,40 +35,39 @@
 ## 🚀 快速開始
 
 ### 環境需求
-- Node.js 16+ 
+- Node.js 16+
 - npm/pnpm/yarn
 
 ### 安裝步驟
 
 1. **克隆專案**
-   ```bash
-   git clone https://github.com/Lawliet0813/DebtWiseAI.git
-   cd DebtWiseAI
-   ```
+```bash
+git clone https://github.com/Lawliet0813/DebtWiseAI.git
+cd DebtWiseAI
+```
 
 2. **安裝依賴**
-   ```bash
-   npm install
-   # 或
-   pnpm install
-   # 或
-   yarn install
-   ```
+```bash
+npm install
+# 或
+pnpm install
+# 或
+yarn install
+```
 
 3. **啟動開發伺服器**
-   ```bash
-   npm run dev
-   # 或
-   pnpm dev
-   # 或
-   yarn dev
-   ```
+```bash
+npm run dev
+# 或
+pnpm dev
+# 或
+yarn dev
+```
 
 4. **開啟瀏覽器**
-   ```
-   http://localhost:3000
-   ```
-
+```bash
+http://localhost:3000
+```
 ### 可用指令
 
 ```bash
@@ -118,7 +112,6 @@ src/
 ├── services/          # API 服務
 └── data/              # 資料相關
 ```
-
 ## 📱 功能特色
 
 ### 💡 智能分析
@@ -142,71 +135,13 @@ src/
 - 債務結構分析
 - 還款預測和建議
 
-## 🤝 貢獻指南
+## Backend Prototype
 
-我們歡迎任何形式的貢獻！請遵循以下步驟：
+DebtWise AI Backend Prototype
 
-1. Fork 本專案
-2. 建立功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 開啟 Pull Request
+This repository contains a standalone Node.js backend prototype used for simulations and API examples. It is provided alongside the frontend to demonstrate repayment strategy algorithms and a minimal server implementation for development and testing.
 
-## 📄 開源授權
-
-本專案採用 MIT 授權條款 - 查看 [LICENSE](LICENSE) 檔案了解更多詳情。
-
-## 🙋‍♀️ 支援與反饋
-
-- 📧 聯絡信箱：support@debtwise.ai
-- 🐛 問題回報：[GitHub Issues](https://github.com/Lawliet0813/DebtWiseAI/issues)
-- 💬 功能請求：[GitHub Discussions](https://github.com/Lawliet0813/DebtWiseAI/discussions)
-
-## 🎯 專案路線圖
-
-### v1.0 (目前版本)
-- [x] 基本債務管理
-- [x] 還款策略分析
-- [x] 進度追蹤
-- [x] 財務工具
-- [x] 理財教育
-
-### v2.0 (計劃中)
-- [ ] 後端 API 整合
-- [ ] 使用者帳戶系統
-- [ ] 雲端資料同步
-- [ ] 進階 AI 分析
-- [ ] 社群功能
-
-### v3.0 (未來)
-- [ ] 移動端 App
-- [ ] 銀行 API 整合
-- [ ] 投資建議功能
-- [ ] 多語系支援
-
-## 🌟 展示截圖
-
-### 儀表板
-![Dashboard](docs/screenshots/dashboard.png)
-
-### 債務管理
-![Debt Management](docs/screenshots/debt-management.png)
-
-### 還款策略
-![Payment Strategy](docs/screenshots/strategy.png)
-
----
-
-**讓 DebtWise AI 成為您邁向財務自由的最佳夥伴！** 🚀
-
-Made with ❤️ by DebtWise Team
-=======
-# DebtWise AI Backend Prototype
-
-DebtWise AI is a debt management and intelligent repayment planning platform. This repository contains a standalone Node.js backend implemented without third-party dependencies to satisfy restricted runtime environments. The service exposes REST-style endpoints for authentication, debt CRUD, repayment simulations (snowball & avalanche), reminders, and analytics.
-
-## Features
-
+### Features
 - **User Management** – registration, login, profile updates, and membership upgrades (free vs. premium).
 - **Debt Management** – create, update, delete debts with balance tracking, payment history, and membership-based limits.
 - **Repayment Strategies** – deterministic simulation of snowball and avalanche strategies with payoff timelines and interest projections.
@@ -214,8 +149,7 @@ DebtWise AI is a debt management and intelligent repayment planning platform. Th
 - **Analytics & Visualisation Support** – aggregated metrics for totals, distributions, and payment trends to power dashboard charts.
 - **Offline-Friendly Storage** – JSON file persistence (`data/db.json`) to keep the project runnable without external services.
 
-## Getting Started
-
+### Getting Started (Backend)
 ```bash
 npm install # no-op (zero external dependencies)
 npm run dev
@@ -238,16 +172,14 @@ The API listens on port `4000` by default. Override with `PORT=5000 npm run dev`
 
 Authentication relies on a bearer token returned by login/registration responses.
 
-## Running Tests
-
+### Running Tests
 ```bash
 npm test
 ```
 
 Node's built-in test runner validates repayment strategy calculations and error handling.
 
-## Project Structure
-
+### Project Structure (Backend)
 ```
 src/
   algorithms/       # Snowball & avalanche simulation logic
@@ -258,16 +190,36 @@ src/
   utils/            # Shared helpers (JWT, validation, etc.)
 data/db.json        # Persistent storage
 ```
-
-## Roadmap
-
+### Roadmap
 - Replace JSON storage with Postgres or Firestore adapters.
 - Add push notification integrations (APNs/FCM).
 - Provide PDF export and predictive analytics for premium tier (v2 goals).
 
-## Security Notes
-
+### Security Notes
 - Passwords are hashed with PBKDF2 (120k iterations, SHA-512).
 - JWT generation implemented with HMAC-SHA256 and configurable expiry.
 - Ensure the default secret (`JWT_SECRET`) is overridden in production deployments.
->>>>>>> theirs
+
+## 🤝 貢獻指南
+
+我們歡迎任何形式的貢獻！請遵循以下步驟：
+
+1. Fork 本專案
+2. 建立功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 開啟 Pull Request
+
+## 📄 開源授權
+
+本專案採用 MIT 授權條款 - 查看 [LICENSE](LICENSE) 檔案了解更多詳情。
+
+## 🙋‍♀️ 支援與反饋
+
+- 📧 聯絡信箱：support@debtwise.ai
+- 🐛 問題回報：[GitHub Issues](https://github.com/Lawliet0813/DebtWiseAI/issues)
+- 💬 功能請求：[GitHub Discussions](https://github.com/Lawliet0813/DebtWiseAI/discussions)
+
+---
+
+Made with ❤️ by DebtWise Team
