@@ -1,4 +1,3 @@
-<<<<<<< ours
 # DebtWise AI - 智能債務管理系統
 
 > 🤖 使用 AI 技術幫助您制定最佳還款策略，實現財務自由的智能債務管理助手
@@ -9,7 +8,14 @@
 [![Vite](https://img.shields.io/badge/Vite-4.4.5-646CFF?logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.0-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 
-## ✨ 核心功能
+## 📦 專案組成
+
+- **前端應用程式**：以 React + Vite 打造的使用者介面，提供完整的債務管理與 AI 策略分析體驗。
+- **後端 Prototype**：純 Node.js 實作的 REST API，無需第三方套件即可在受限環境中運行，支援使用者管理、債務 CRUD、還款模擬與分析。
+
+---
+
+## ✨ 前端核心功能
 
 ### 🎯 智能還款策略
 - **雪球法**：優先償還小額債務，建立成就感與動力
@@ -37,10 +43,12 @@
 - 每日理財小貼士
 - 互動式學習進度
 
-## 🚀 快速開始
+---
+
+## 🚀 快速開始（前端）
 
 ### 環境需求
-- Node.js 16+ 
+- Node.js 16+
 - npm/pnpm/yarn
 
 ### 安裝步驟
@@ -93,7 +101,9 @@ npm run preview
 npm run test
 ```
 
-## 🏗️ 技術架構
+---
+
+## 🏗️ 前端技術架構
 
 ### 前端技術棧
 - **React 18** - 現代化 UI 框架
@@ -103,7 +113,7 @@ npm run test
 - **Recharts** - 數據視覺化圖表庫
 
 ### 專案結構
-```
+```text
 src/
 ├── components/          # 共用組件
 │   ├── common/         # 基礎組件
@@ -118,6 +128,8 @@ src/
 ├── services/          # API 服務
 └── data/              # 資料相關
 ```
+
+---
 
 ## 📱 功能特色
 
@@ -142,6 +154,8 @@ src/
 - 債務結構分析
 - 還款預測和建議
 
+---
+
 ## 🤝 貢獻指南
 
 我們歡迎任何形式的貢獻！請遵循以下步驟：
@@ -152,15 +166,21 @@ src/
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 開啟 Pull Request
 
+---
+
 ## 📄 開源授權
 
 本專案採用 MIT 授權條款 - 查看 [LICENSE](LICENSE) 檔案了解更多詳情。
+
+---
 
 ## 🙋‍♀️ 支援與反饋
 
 - 📧 聯絡信箱：support@debtwise.ai
 - 🐛 問題回報：[GitHub Issues](https://github.com/Lawliet0813/DebtWiseAI/issues)
 - 💬 功能請求：[GitHub Discussions](https://github.com/Lawliet0813/DebtWiseAI/discussions)
+
+---
 
 ## 🎯 專案路線圖
 
@@ -184,6 +204,8 @@ src/
 - [ ] 投資建議功能
 - [ ] 多語系支援
 
+---
+
 ## 🌟 展示截圖
 
 ### 儀表板
@@ -200,12 +222,14 @@ src/
 **讓 DebtWise AI 成為您邁向財務自由的最佳夥伴！** 🚀
 
 Made with ❤️ by DebtWise Team
-=======
-# DebtWise AI Backend Prototype
 
-DebtWise AI is a debt management and intelligent repayment planning platform. This repository contains a standalone Node.js backend implemented without third-party dependencies to satisfy restricted runtime environments. The service exposes REST-style endpoints for authentication, debt CRUD, repayment simulations (snowball & avalanche), reminders, and analytics.
+---
 
-## Features
+## 🔧 Backend Prototype Overview
+
+DebtWise AI is a debt management and intelligent repayment planning platform. This repository also包含一個純 Node.js 後端 Prototype，可在無法安裝第三方套件的環境中執行，提供 RESTful API 以支援完整的債務管理流程。
+
+### Backend Features
 
 - **User Management** – registration, login, profile updates, and membership upgrades (free vs. premium).
 - **Debt Management** – create, update, delete debts with balance tracking, payment history, and membership-based limits.
@@ -214,7 +238,7 @@ DebtWise AI is a debt management and intelligent repayment planning platform. Th
 - **Analytics & Visualisation Support** – aggregated metrics for totals, distributions, and payment trends to power dashboard charts.
 - **Offline-Friendly Storage** – JSON file persistence (`data/db.json`) to keep the project runnable without external services.
 
-## Getting Started
+### Getting Started (Backend)
 
 ```bash
 npm install # no-op (zero external dependencies)
@@ -238,7 +262,7 @@ The API listens on port `4000` by default. Override with `PORT=5000 npm run dev`
 
 Authentication relies on a bearer token returned by login/registration responses.
 
-## Running Tests
+### Running Backend Tests
 
 ```bash
 npm test
@@ -246,9 +270,9 @@ npm test
 
 Node's built-in test runner validates repayment strategy calculations and error handling.
 
-## Project Structure
+### Backend Project Structure
 
-```
+```text
 src/
   algorithms/       # Snowball & avalanche simulation logic
   services/         # Domain services operating on the data store
@@ -259,15 +283,15 @@ src/
 data/db.json        # Persistent storage
 ```
 
-## Roadmap
+### Backend Roadmap
 
 - Replace JSON storage with Postgres or Firestore adapters.
 - Add push notification integrations (APNs/FCM).
 - Provide PDF export and predictive analytics for premium tier (v2 goals).
 
-## Security Notes
+### Security Notes
 
 - Passwords are hashed with PBKDF2 (120k iterations, SHA-512).
 - JWT generation implemented with HMAC-SHA256 and configurable expiry.
 - Ensure the default secret (`JWT_SECRET`) is overridden in production deployments.
->>>>>>> theirs
+
