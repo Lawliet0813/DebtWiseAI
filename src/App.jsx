@@ -728,6 +728,7 @@ const DebtWiseAI = () => {
               </label>
               <div className="relative">
                 <input
+                  key={showPassword ? 'password-visible' : 'password-hidden'}
                   type={showPassword ? 'text' : 'password'}
                   value={authForm.password}
                   ref={passwordInputRef}
