@@ -18,26 +18,24 @@ function applyTimeOfDay(date, timeString) {
 function createReminderService(context) {
   const { db, config } = context;
 
-  function listCustomReminders(userId) {
-    return db.data.reminders
-      .filter((reminder) => reminder.userId === userId)
-      .sort((a, b) => new Date(a.notifyAt) - new Date(b.notifyAt));
+  async function listCustomReminders(userId) {
+    return db.listRemindersByUser(userId);
   }
 
-  function ensureDebt(userId, debtId) {
-    const debt = db.data.debts.find((record) => record.id === debtId && record.userId === userId);
-    if (!debt) {
+  async function ensureDebt(userId, debtId) {
+    const debt = await db.getDebtById(debtId);
+    if (!debt || debt.userId !== userId) {
       throw new AppError(404, 'Debt not found for reminder.');
     }
     return debt;
   }
 
-  function createCustomReminder(userId, payload) {
+  async function createCustomReminder(userId, payload) {
     const title = getString(payload, 'title', { minLength: 1 });
     const notifyAt = getDate(payload, 'notifyAt').toISOString();
     let debtId = null;
     if (payload.debtId) {
-      ensureDebt(userId, payload.debtId);
+      await ensureDebt(userId, payload.debtId);
       debtId = payload.debtId;
     }
     const reminder = {
@@ -48,20 +46,20 @@ function createReminderService(context) {
       notifyAt,
       createdAt: new Date().toISOString(),
     };
-    db.data.reminders.push(reminder);
-    db.write();
-    return reminder;
+    const stored = await db.createReminder(reminder);
+    return stored || reminder;
   }
 
-  function getUpcomingReminders(user) {
+  async function getUpcomingReminders(user) {
     const now = new Date();
     const future = new Date();
     future.setDate(future.getDate() + config.reminderLookAheadDays);
     const reminders = [];
     const preferences = user.reminderPreferences || { daysBeforeDue: 3, timeOfDay: '09:00' };
 
-    db.data.debts
-      .filter((debt) => debt.userId === user.id && debt.balance > 0)
+    const debts = await db.listDebtsByUser(user.id);
+    debts
+      .filter((debt) => debt.balance > 0)
       .forEach((debt) => {
         const dueDate = new Date(debt.dueDate);
         const reminderDate = new Date(dueDate);
@@ -80,7 +78,8 @@ function createReminderService(context) {
         }
       });
 
-    listCustomReminders(user.id).forEach((reminder) => {
+    const customReminders = await listCustomReminders(user.id);
+    customReminders.forEach((reminder) => {
       const notifyAt = new Date(reminder.notifyAt);
       if (notifyAt >= now && notifyAt <= future) {
         reminders.push({

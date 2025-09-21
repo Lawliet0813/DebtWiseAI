@@ -3,8 +3,8 @@ import { clampToZero, formatYearMonth } from '../utils/date.js';
 function createAnalyticsService(context) {
   const { db } = context;
 
-  function getSummary(userId) {
-    const debts = db.data.debts.filter((debt) => debt.userId === userId);
+  async function getSummary(userId) {
+    const debts = await db.listDebtsByUser(userId);
     const totalPrincipal = debts.reduce((sum, debt) => sum + (debt.principal || 0), 0);
     const totalBalance = debts.reduce((sum, debt) => sum + (debt.balance || 0), 0);
     const totalPaid = debts.reduce((sum, debt) => sum + (debt.totalPaid || 0), 0);
@@ -34,8 +34,8 @@ function createAnalyticsService(context) {
     };
   }
 
-  function getDistribution(userId) {
-    const debts = db.data.debts.filter((debt) => debt.userId === userId);
+  async function getDistribution(userId) {
+    const debts = await db.listDebtsByUser(userId);
     const grouped = debts.reduce((acc, debt) => {
       const key = debt.type || 'other';
       if (!acc[key]) {
@@ -52,8 +52,8 @@ function createAnalyticsService(context) {
     }));
   }
 
-  function getTrends(userId) {
-    const payments = db.data.payments.filter((payment) => payment.userId === userId);
+  async function getTrends(userId) {
+    const payments = await db.listPaymentsByUser(userId);
     const grouped = payments.reduce((acc, payment) => {
       const key = formatYearMonth(payment.paidAt);
       if (!acc[key]) {

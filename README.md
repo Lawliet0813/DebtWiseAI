@@ -11,7 +11,7 @@
 ## 📦 專案組成
 
 - **前端應用程式**：以 React + Vite 打造的使用者介面，提供完整的債務管理與 AI 策略分析體驗。
-- **後端 Prototype**：純 Node.js 實作的 REST API，無需第三方套件即可在受限環境中運行，支援使用者管理、債務 CRUD、還款模擬與分析。
+- **後端 API**：Node.js 實作的 REST 服務，整合 Supabase PostgreSQL 作為資料庫，支援使用者管理、債務 CRUD、還款模擬與分析。
 
 ---
 
@@ -101,6 +101,19 @@ npm run preview
 npm run test
 ```
 
+## 🔧 後端設定（Supabase）
+
+後端 API 預設會連線至 Supabase PostgreSQL。請在部署或啟動 Serverless Functions 時設定以下環境變數：
+
+| 變數 | 說明 |
+| --- | --- |
+| `SUPABASE_URL` | Supabase 專案 URL。 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key，建議僅在安全的後端環境使用。 |
+| `SUPABASE_ANON_KEY` | （選用）匿名金鑰，若未提供 Service Role Key 可暫時使用。 |
+| `SUPABASE_SCHEMA` | （選用）資料庫 schema 名稱，預設為 `public`。 |
+
+資料表預期包含 `users`、`debts`、`payments`、`reminders` 四個集合，欄位結構與原本的 `data/db.json` 相同。若上述變數未設定，系統會自動改用專案內建的 JSON 檔案（`data/db.json`）以利本地測試。
+
 ---
 
 ## 🏗️ 前端技術架構
@@ -145,8 +158,8 @@ src/
 - 流暢的動畫效果
 
 ### 🔐 資料安全
-- 本地儲存，保護隱私
-- 不收集敏感資訊
+- 使用 Supabase 托管資料並可搭配 Row Level Security 保障隱私
+- 環境變數控制資料庫連線，未設定時自動回退至本地 JSON 測試資料
 - 支援資料匯出和備份
 
 ### 📈 豐富報表
@@ -227,7 +240,7 @@ Made with ❤️ by DebtWise Team
 
 ## 🔧 Backend Prototype Overview
 
-DebtWise AI is a debt management and intelligent repayment planning platform. This repository also包含一個純 Node.js 後端 Prototype，可在無法安裝第三方套件的環境中執行，提供 RESTful API 以支援完整的債務管理流程。
+DebtWise AI is a debt management and intelligent repayment planning platform. This repository 亦包含一個 Node.js 後端 Prototype，現在預設整合 Supabase PostgreSQL 做為雲端資料庫，同時保留 JSON 檔案回退機制，便於在受限環境或離線情境中執行 RESTful API。
 
 ### Backend Features
 
@@ -236,16 +249,22 @@ DebtWise AI is a debt management and intelligent repayment planning platform. Th
 - **Repayment Strategies** – deterministic simulation of snowball and avalanche strategies with payoff timelines and interest projections.
 - **Reminders & Notifications** – automatic upcoming due-date reminders plus user-defined custom reminders.
 - **Analytics & Visualisation Support** – aggregated metrics for totals, distributions, and payment trends to power dashboard charts.
-- **Offline-Friendly Storage** – JSON file persistence (`data/db.json`) to keep the project runnable without external services.
+- **Supabase-backed Storage** – 採用 Supabase PostgreSQL 儲存資料，並保留 `data/db.json` 作為本地測試與離線回退方案。
 
 ### Getting Started (Backend)
 
 ```bash
-npm install # no-op (zero external dependencies)
-npm run dev
+npm install
+
+# 設定必要的 Supabase 環境變數
+export SUPABASE_URL="https://<your-project>.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
+
+# 啟動 Node.js 後端
+node src/server.js
 ```
 
-The API listens on port `4000` by default. Override with `PORT=5000 npm run dev`.
+The API listens on port `4000` by default. Override with `PORT=5000 node src/server.js`.
 
 ### Key Endpoints
 
@@ -278,14 +297,14 @@ src/
   services/         # Domain services operating on the data store
   routes/           # HTTP route registrations
   http/router.js    # Minimal routing & auth layer
-  storage/          # File-based persistence
+  storage/          # Supabase + JSON fallback adapters
   utils/            # Shared helpers (JWT, validation, etc.)
 data/db.json        # Persistent storage
 ```
 
 ### Backend Roadmap
 
-- Replace JSON storage with Postgres or Firestore adapters.
+- 添加 Supabase schema migration 與種子資料腳本。
 - Add push notification integrations (APNs/FCM).
 - Provide PDF export and predictive analytics for premium tier (v2 goals).
 

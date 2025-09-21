@@ -5,19 +5,20 @@ import { simulateStrategy } from '../algorithms/debtStrategies.js';
 function createStrategyService(context) {
   const { db } = context;
 
-  function getActiveDebts(userId) {
-    const debts = db.data.debts.filter((debt) => debt.userId === userId && debt.balance > 0);
-    if (debts.length === 0) {
+  async function getActiveDebts(userId) {
+    const debts = await db.listDebtsByUser(userId);
+    const activeDebts = debts.filter((debt) => debt.balance > 0);
+    if (activeDebts.length === 0) {
       throw new AppError(400, 'No active debts found for simulation.');
     }
-    return debts;
+    return activeDebts;
   }
 
-  function simulate(userId, payload) {
+  async function simulate(userId, payload) {
     const strategy = getString(payload, 'strategy', { minLength: 3 }).toLowerCase();
     const monthlyBudget = getNumber(payload, 'monthlyBudget', { min: 0.01 });
     const startDate = payload.startDate ? new Date(payload.startDate) : new Date();
-    const debts = getActiveDebts(userId);
+    const debts = await getActiveDebts(userId);
     const result = simulateStrategy(debts, { strategy, monthlyBudget, startDate });
     return {
       strategy: result.strategy,
@@ -30,10 +31,10 @@ function createStrategyService(context) {
     };
   }
 
-  function compare(userId, payload) {
+  async function compare(userId, payload) {
     const monthlyBudget = getNumber(payload, 'monthlyBudget', { min: 0.01 });
     const startDate = payload.startDate ? new Date(payload.startDate) : new Date();
-    const debts = getActiveDebts(userId);
+    const debts = await getActiveDebts(userId);
     const snowball = simulateStrategy(debts, { strategy: 'snowball', monthlyBudget, startDate });
     const avalanche = simulateStrategy(debts, { strategy: 'avalanche', monthlyBudget, startDate });
     return {

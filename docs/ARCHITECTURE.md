@@ -11,12 +11,12 @@
                                  ▼
                        ┌──────────────────┐
                        │  Storage Layer   │
-                       │ (JSON in V1,     │
-                       │  DB adapter V2)  │
+                       │ (Supabase +      │
+                       │  JSON fallback)  │
                        └──────────────────┘
 ```
 
-The backend exposes stateless JSON endpoints; clients authenticate using JWT bearer tokens. The storage layer is abstracted in `services/` to facilitate swapping the JSON file for PostgreSQL or Firestore without modifying business logic.
+The backend exposes stateless JSON endpoints; clients authenticate using JWT bearer tokens. The storage layer is abstracted in `services/` and now connects to Supabase PostgreSQL by default while keeping a JSON fallback so business logic stays decoupled from persistence concerns.
 
 ## Modules
 
@@ -26,7 +26,7 @@ The backend exposes stateless JSON endpoints; clients authenticate using JWT bea
 | `services/` | Business logic for authentication, debts, reminders, analytics, and strategy orchestration. |
 | `http/router.js` | Lightweight request router with body parsing, route matching, and authentication guard. |
 | `routes/` | HTTP endpoint definitions mapping to services. |
-| `storage/database.js` | File-backed persistence abstraction used for local development and testing. |
+| `storage/database.js` | Supabase client wrapper with JSON fallback for local development and testing. |
 | `utils/` | Shared utilities: JWT signing, PBKDF2 password hashing, validation helpers, and date formatting. |
 
 ## Data Model
@@ -84,7 +84,7 @@ Payments capture `amount`, `paidAt`, and optional notes. Reminders include both 
 
 ## Future Extensions
 
-1. **Database Adapter** – Implement repository interfaces for Postgres/Firestore.
+1. **Database Tooling** – Provide Supabase schema migrations and automated seeding.
 2. **Push Notifications** – Integrate APNs/FCM for real-time reminders.
 3. **Advanced Analytics** – Add AI-assisted payoff suggestions and PDF export for premium members.
 4. **Monitoring & Logging** – Plug into centralized logging (e.g., OpenTelemetry) and health checks.

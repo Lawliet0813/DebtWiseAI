@@ -44,18 +44,18 @@ function createDebtService(context) {
     };
   }
 
-  function ensureDebt(userId, debtId) {
-    const debt = db.data.debts.find((record) => record.id === debtId && record.userId === userId);
-    if (!debt) {
+  async function ensureDebt(userId, debtId) {
+    const debt = await db.getDebtById(debtId);
+    if (!debt || debt.userId !== userId) {
       throw new AppError(404, 'Debt not found.');
     }
     return debt;
   }
 
-  function createDebt(user, payload) {
+  async function createDebt(user, payload) {
     if (user.membership !== 'premium') {
-      const count = db.data.debts.filter((debt) => debt.userId === user.id).length;
-      if (count >= config.freeDebtLimit) {
+      const debts = await db.listDebtsByUser(user.id);
+      if (debts.length >= config.freeDebtLimit) {
         throw new AppError(403, `Free membership allows up to ${config.freeDebtLimit} debts.`);
       }
     }
@@ -81,13 +81,12 @@ function createDebtService(context) {
       updatedAt: now,
       lastPaymentAt: null,
     };
-    db.data.debts.push(debt);
-    db.write();
-    return formatDebt(debt);
+    const stored = await db.createDebt(debt);
+    return formatDebt(stored || debt);
   }
 
-  function listDebts(userId, query = {}) {
-    let results = db.data.debts.filter((debt) => debt.userId === userId);
+  async function listDebts(userId, query = {}) {
+    let results = await db.listDebtsByUser(userId);
     if (query.type) {
       const requested = normalizeType(String(query.type));
       results = results.filter((debt) => debt.type === requested);
@@ -110,55 +109,70 @@ function createDebtService(context) {
     return results.map((debt) => formatDebt(debt));
   }
 
-  function getDebt(userId, debtId) {
-    return formatDebt(ensureDebt(userId, debtId));
-  }
-
-  function updateDebt(userId, debtId, payload) {
-    const debt = ensureDebt(userId, debtId);
-    if (payload.name !== undefined) {
-      debt.name = getString(payload, 'name', { required: false, defaultValue: debt.name });
-    }
-    if (payload.apr !== undefined) {
-      debt.apr = getNumber(payload, 'apr', { required: false, min: 0, defaultValue: debt.apr });
-    }
-    if (payload.minimumPayment !== undefined) {
-      debt.minimumPayment = clampToZero(getNumber(payload, 'minimumPayment', { required: false, min: 0.01, defaultValue: debt.minimumPayment }));
-    }
-    if (payload.principal !== undefined) {
-      const updatedPrincipal = clampToZero(getNumber(payload, 'principal', { required: false, min: 0.01, defaultValue: debt.principal }));
-      debt.principal = updatedPrincipal;
-      if (debt.balance > updatedPrincipal) {
-        debt.balance = updatedPrincipal;
-      }
-    }
-    if (payload.balance !== undefined) {
-      debt.balance = clampToZero(getNumber(payload, 'balance', { required: false, min: 0, defaultValue: debt.balance }));
-      if (debt.balance > debt.principal) {
-        debt.balance = debt.principal;
-      }
-    }
-    if (payload.dueDate !== undefined) {
-      debt.dueDate = getDate(payload, 'dueDate', { required: false, defaultValue: new Date(debt.dueDate) }).toISOString();
-    }
-    if (payload.type !== undefined) {
-      debt.type = normalizeType(String(payload.type));
-    }
-    debt.updatedAt = new Date().toISOString();
-    db.write();
+  async function getDebt(userId, debtId) {
+    const debt = await ensureDebt(userId, debtId);
     return formatDebt(debt);
   }
 
-  function deleteDebt(userId, debtId) {
-    const debt = ensureDebt(userId, debtId);
-    db.data.debts = db.data.debts.filter((record) => record.id !== debtId);
-    db.data.payments = db.data.payments.filter((payment) => payment.debtId !== debtId);
-    db.write();
+  async function updateDebt(userId, debtId, payload) {
+    const debt = await ensureDebt(userId, debtId);
+    const updates = {};
+    let updatedPrincipal = debt.principal;
+    let updatedBalance = debt.balance;
+    if (payload.name !== undefined) {
+      updates.name = getString(payload, 'name', { required: false, defaultValue: debt.name });
+    }
+    if (payload.apr !== undefined) {
+      updates.apr = getNumber(payload, 'apr', { required: false, min: 0, defaultValue: debt.apr });
+    }
+    if (payload.minimumPayment !== undefined) {
+      updates.minimumPayment = clampToZero(
+        getNumber(payload, 'minimumPayment', { required: false, min: 0.01, defaultValue: debt.minimumPayment }),
+      );
+    }
+    if (payload.principal !== undefined) {
+      updatedPrincipal = clampToZero(
+        getNumber(payload, 'principal', { required: false, min: 0.01, defaultValue: debt.principal }),
+      );
+      updates.principal = updatedPrincipal;
+      if (updatedBalance > updatedPrincipal) {
+        updatedBalance = updatedPrincipal;
+        updates.balance = updatedBalance;
+      }
+    }
+    if (payload.balance !== undefined) {
+      updatedBalance = clampToZero(
+        getNumber(payload, 'balance', { required: false, min: 0, defaultValue: debt.balance }),
+      );
+      if (updatedBalance > updatedPrincipal) {
+        updatedBalance = updatedPrincipal;
+      }
+      updates.balance = updatedBalance;
+    }
+    if (payload.dueDate !== undefined) {
+      updates.dueDate = getDate(payload, 'dueDate', {
+        required: false,
+        defaultValue: new Date(debt.dueDate),
+      }).toISOString();
+    }
+    if (payload.type !== undefined) {
+      updates.type = normalizeType(String(payload.type));
+    }
+    updates.updatedAt = new Date().toISOString();
+    const stored = await db.updateDebt(debtId, updates);
+    const updatedDebt = stored || { ...debt, ...updates };
+    return formatDebt(updatedDebt);
+  }
+
+  async function deleteDebt(userId, debtId) {
+    await ensureDebt(userId, debtId);
+    await db.deleteDebt(debtId);
+    await db.deletePaymentsByDebt(debtId);
     return { success: true };
   }
 
-  function recordPayment(userId, debtId, payload) {
-    const debt = ensureDebt(userId, debtId);
+  async function recordPayment(userId, debtId, payload) {
+    const debt = await ensureDebt(userId, debtId);
     const amount = getNumber(payload, 'amount', { min: 0.01 });
     const paidAt = payload.paidAt ? getDate(payload, 'paidAt', { required: false, defaultValue: new Date() }) : new Date();
     const note = payload.note ? getString(payload, 'note', { required: false, defaultValue: '' }) : '';
@@ -172,26 +186,28 @@ function createDebtService(context) {
       createdAt: new Date().toISOString(),
       note,
     };
-    db.data.payments.push(payment);
-    debt.balance = clampToZero(debt.balance - amount);
-    debt.totalPaid = clampToZero((debt.totalPaid || 0) + amount);
-    debt.lastPaymentAt = payment.paidAt;
-    debt.updatedAt = new Date().toISOString();
-    if (debt.balance <= 0.01) {
-      debt.balance = 0;
+    await db.createPayment(payment);
+    let newBalance = clampToZero(debt.balance - amount);
+    if (newBalance <= 0.01) {
+      newBalance = 0;
     }
-    db.write();
+    const updates = {
+      balance: newBalance,
+      totalPaid: clampToZero((debt.totalPaid || 0) + amount),
+      lastPaymentAt: payment.paidAt,
+      updatedAt: new Date().toISOString(),
+    };
+    const storedDebt = await db.updateDebt(debtId, updates);
+    const updatedDebt = storedDebt || { ...debt, ...updates };
     return {
       payment,
-      debt: formatDebt(debt),
+      debt: formatDebt(updatedDebt),
     };
   }
 
-  function listPayments(userId, debtId) {
-    ensureDebt(userId, debtId);
-    return db.data.payments
-      .filter((payment) => payment.userId === userId && payment.debtId === debtId)
-      .sort((a, b) => new Date(b.paidAt) - new Date(a.paidAt));
+  async function listPayments(userId, debtId) {
+    await ensureDebt(userId, debtId);
+    return db.listPaymentsByDebt(userId, debtId);
   }
 
   return {
