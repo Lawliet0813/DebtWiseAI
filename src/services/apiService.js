@@ -1,4 +1,6 @@
-// src/services/apiService.js - 修正版
+// src/services/apiService.js - 完整修正版
+// 修復 undefined membership 錯誤
+// 支援 Supabase 真實 API 和 Mock API 備用
 import { createClient } from '@supabase/supabase-js';
 
 // 初始化 Supabase 客戶端
