@@ -227,7 +227,7 @@ Made with ❤️ by DebtWise Team
 
 ## 🔧 Backend Prototype Overview
 
-DebtWise AI is a debt management and intelligent repayment planning platform. This repository also包含一個純 Node.js 後端 Prototype，可在無法安裝第三方套件的環境中執行，提供 RESTful API 以支援完整的債務管理流程。
+DebtWise AI is a debt management and intelligent repayment planning platform. Production deployments now rely on Supabase (Postgres) for managed persistence and authentication, while this repository 也包含一個純 Node.js 後端 Prototype，可在無法安裝第三方套件的環境中執行，提供 RESTful API 以支援完整的債務管理流程。
 
 ### Backend Features
 
@@ -236,7 +236,20 @@ DebtWise AI is a debt management and intelligent repayment planning platform. Th
 - **Repayment Strategies** – deterministic simulation of snowball and avalanche strategies with payoff timelines and interest projections.
 - **Reminders & Notifications** – automatic upcoming due-date reminders plus user-defined custom reminders.
 - **Analytics & Visualisation Support** – aggregated metrics for totals, distributions, and payment trends to power dashboard charts.
+- **Supabase Integration** – cloud persistence and authentication are handled via Supabase; see `src/services/supabaseClient.ts` for client configuration.
 - **Offline-Friendly Storage** – JSON file persistence (`data/db.json`) to keep the project runnable without external services.
+
+### Supabase Cloud Backend
+
+前端與雲端環境使用 [Supabase](https://supabase.com/) 的 Postgres 資料庫與 Auth 服務。請於本地或部署平台設定以下環境變數：
+
+```bash
+VITE_SUPABASE_URL=...        # Supabase 專案 URL
+VITE_SUPABASE_ANON_KEY=...   # 匿名公開金鑰
+# 伺服器環境可使用 SUPABASE_URL / SUPABASE_ANON_KEY 變數名稱
+```
+
+Supabase schema 預期包含 `debts`、`payments`、`reminders` 等資料表，對應的 CRUD 操作可於 `src/services/*.ts` 找到實作。應用程式會優先使用這些雲端服務，若未提供環境變數則可退回到純 Node.js Prototype 以利離線開發。
 
 ### Getting Started (Backend)
 
@@ -285,7 +298,7 @@ data/db.json        # Persistent storage
 
 ### Backend Roadmap
 
-- Replace JSON storage with Postgres or Firestore adapters.
+- Replace JSON storage with a Supabase adapter so the Node.js prototype mirrors the production cloud backend.
 - Add push notification integrations (APNs/FCM).
 - Provide PDF export and predictive analytics for premium tier (v2 goals).
 

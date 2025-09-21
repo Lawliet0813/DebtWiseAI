@@ -16,7 +16,7 @@
                        └──────────────────┘
 ```
 
-The backend exposes stateless JSON endpoints; clients authenticate using JWT bearer tokens. The storage layer is abstracted in `services/` to facilitate swapping the JSON file for PostgreSQL or Firestore without modifying business logic.
+The backend exposes stateless JSON endpoints; clients authenticate using JWT bearer tokens. The storage layer is abstracted in `services/` to facilitate swapping the JSON file for Supabase's Postgres backend without modifying business logic.
 
 ## Modules
 
@@ -82,9 +82,15 @@ Payments capture `amount`, `paidAt`, and optional notes. Reminders include both 
 - Membership gates (free vs. premium) enforced at service layer.
 - Input validation performed by hand-rolled validators to avoid external dependencies.
 
+## Supabase Integration
+
+- **Managed Postgres** – Supabase hosts the production dataset (`debts`, `payments`, `reminders`, etc.) while local development can still rely on the JSON adapter.
+- **Auth Services** – Supabase Auth supplies OTP/password flows consumed via `src/services/auth.ts` and exposed to the UI hooks.
+- **Environment Configuration** – `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (or server-side `SUPABASE_URL` / `SUPABASE_ANON_KEY`) configure the client in `src/services/supabaseClient.ts`.
+
 ## Future Extensions
 
-1. **Database Adapter** – Implement repository interfaces for Postgres/Firestore.
+1. **Database Adapter** – Complete the Supabase-backed repositories so the Node.js prototype and production deployment share a single persistence layer.
 2. **Push Notifications** – Integrate APNs/FCM for real-time reminders.
 3. **Advanced Analytics** – Add AI-assisted payoff suggestions and PDF export for premium members.
 4. **Monitoring & Logging** – Plug into centralized logging (e.g., OpenTelemetry) and health checks.
