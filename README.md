@@ -264,6 +264,8 @@ export SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
 node src/server.js
 ```
 
+> 💡 **離線開發小提醒**：若您只想在本機快速試用前端功能或受限於無法對外連線的環境，可將 `.env.local` 中的 `VITE_SUPABASE_USE_MOCK` 設為 `true`（預設即為 true）。系統會自動啟用 Mock Supabase Client，改以瀏覽器本地儲存（`localStorage`）維持示範資料，仍可進行債務新增、編輯、繳款與提醒等操作。待您切換到具備網路的環境時，只需將該變數改為 `false` 並提供有效的 Supabase 憑證即可。 
+
 The API listens on port `4000` by default. Override with `PORT=5000 node src/server.js`.
 
 ### Key Endpoints

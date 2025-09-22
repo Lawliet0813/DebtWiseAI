@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createMockSupabaseClient, MOCK_SUPABASE_NOTICE } from './mockSupabaseClient';
 
 type EnvSource = Record<string, string | undefined>;
 
@@ -25,22 +26,36 @@ const getEnvVar = (key: string) => {
   return undefined;
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL') ?? getEnvVar('SUPABASE_URL');
-const supabaseAnonKey =
-  getEnvVar('VITE_SUPABASE_ANON_KEY') ?? getEnvVar('SUPABASE_ANON_KEY');
+const useMockSupabase =
+  (getEnvVar('VITE_SUPABASE_USE_MOCK') ?? getEnvVar('SUPABASE_USE_MOCK')) === 'true';
 
-if (!supabaseUrl) {
-  throw new Error('Missing VITE_SUPABASE_URL environment variable.');
+let supabaseClient: Pick<SupabaseClient, 'auth' | 'from'>;
+
+if (useMockSupabase) {
+  console.info('[supabaseClient] 使用 Mock Supabase Client。');
+  console.info(`[supabaseClient] ${MOCK_SUPABASE_NOTICE}`);
+  supabaseClient = createMockSupabaseClient();
+} else {
+  const supabaseUrl = getEnvVar('VITE_SUPABASE_URL') ?? getEnvVar('SUPABASE_URL');
+  const supabaseAnonKey =
+    getEnvVar('VITE_SUPABASE_ANON_KEY') ?? getEnvVar('SUPABASE_ANON_KEY');
+
+  if (!supabaseUrl) {
+    throw new Error('Missing VITE_SUPABASE_URL environment variable.');
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable.');
+  }
+
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
 }
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
+export const supabase = supabaseClient;
+export const isSupabaseMocked = useMockSupabase;
