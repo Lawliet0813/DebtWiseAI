@@ -165,9 +165,6 @@ function serializeProfilePayload(payload) {
   if (Object.prototype.hasOwnProperty.call(payload, 'id')) {
     record.id = payload.id;
   }
-  if (Object.prototype.hasOwnProperty.call(payload, 'email')) {
-    record.email = payload.email;
-  }
   if (Object.prototype.hasOwnProperty.call(payload, 'passwordHash')) {
     record.password_hash = payload.passwordHash;
   }
@@ -195,22 +192,35 @@ function serializeProfilePayload(payload) {
   return record;
 }
 
-function deserializeProfile(record) {
-  if (!record) {
+function deserializeProfile(record, overrides = {}) {
+  if (!record && Object.keys(overrides).length === 0) {
     return null;
   }
-  return {
-    id: record.id,
-    email: record.email,
-    passwordHash: record.password_hash,
-    name: record.name,
-    income: toNumber(record.income) ?? 0,
-    expenses: toNumber(record.expenses) ?? 0,
-    reminderPreferences: record.reminder_preferences || { daysBeforeDue: 3, timeOfDay: '09:00' },
-    membership: record.membership || 'free',
-    createdAt: record.created_at,
-    updatedAt: record.updated_at,
-  };
+
+  const base = record
+    ? {
+        id: record.id,
+        email: record.email,
+        passwordHash: record.password_hash,
+        name: record.name,
+        income: toNumber(record.income),
+        expenses: toNumber(record.expenses),
+        reminderPreferences: record.reminder_preferences,
+        membership: record.membership,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at,
+      }
+    : {};
+
+  const result = { ...base, ...overrides };
+
+  result.income = toNumber(result.income) ?? 0;
+  result.expenses = toNumber(result.expenses) ?? 0;
+  result.reminderPreferences =
+    result.reminderPreferences || { daysBeforeDue: 3, timeOfDay: '09:00' };
+  result.membership = result.membership || 'free';
+
+  return result;
 }
 
 class SupabaseDatabaseAdapter {
@@ -222,20 +232,47 @@ class SupabaseDatabaseAdapter {
     });
   }
 
+  async fetchAuthUserByEmail(email) {
+    const { data, error } = await this.client.auth.getUserByEmail(email);
+    if (error) {
+      throw new Error(`Supabase getUserByEmail failed: ${error.message}`);
+    }
+    return data?.user ?? null;
+  }
+
+  async fetchAuthUserById(id) {
+    const { data, error } = await this.client.auth.admin.getUserById(id);
+    if (error) {
+      throw new Error(`Supabase getUserById failed: ${error.message}`);
+    }
+    return data?.user ?? null;
+  }
+
   async getUserById(id) {
     const { data, error } = await this.client.from(PROFILE_TABLE).select('*').eq('id', id).maybeSingle();
     if (error) {
       throw new Error(`Supabase getUserById failed: ${error.message}`);
     }
-    return deserializeProfile(data);
+    const authUser = await this.fetchAuthUserById(id);
+    return deserializeProfile(data, {
+      id: authUser?.id ?? data?.id ?? id,
+      email: authUser?.email ?? undefined,
+    });
   }
 
   async getUserByEmail(email) {
-    const { data, error } = await this.client.from(PROFILE_TABLE).select('*').eq('email', email).maybeSingle();
+    const authUser = await this.fetchAuthUserByEmail(email);
+    if (!authUser) {
+      return null;
+    }
+    const { data, error } = await this.client.from(PROFILE_TABLE).select('*').eq('id', authUser.id).maybeSingle();
     if (error) {
       throw new Error(`Supabase getUserByEmail failed: ${error.message}`);
     }
-    return deserializeProfile(data);
+    return deserializeProfile(data, {
+      id: authUser.id,
+      email: authUser.email ?? undefined,
+    });
   }
 
   async createUser(user) {
@@ -244,7 +281,11 @@ class SupabaseDatabaseAdapter {
     if (error) {
       throw new Error(`Supabase createUser failed: ${error.message}`);
     }
-    return deserializeProfile(data);
+    const authUser = user.email ? await this.fetchAuthUserByEmail(user.email) : null;
+    return deserializeProfile(data, {
+      id: data?.id ?? user.id,
+      email: authUser?.email ?? user.email,
+    });
   }
 
   async updateUser(id, updates) {
