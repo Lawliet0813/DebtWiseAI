@@ -233,13 +233,28 @@ class SupabaseDatabaseAdapter {
   }
 
   async findAuthUserByEmail(email) {
+    if (!email) {
+      return null;
+    }
+
     const adminApi = this.client.auth.admin;
-    const method = ['getUser', 'ByEmail'].join('');
-    const { data, error } = await adminApi[method](email);
+    if (typeof adminApi?.listUsers !== 'function') {
+      throw new Error('Supabase findAuthUserByEmail failed: admin listUsers API is not available.');
+    }
+
+    const { data, error } = await adminApi.listUsers({
+      email,
+      perPage: 1,
+    });
+
     if (error) {
       throw new Error(`Supabase findAuthUserByEmail failed: ${error.message}`);
     }
-    return data?.user ?? null;
+
+    const normalized = String(email).toLowerCase();
+    const matchedUser = data?.users?.find((user) => (user.email || '').toLowerCase() === normalized);
+
+    return matchedUser ?? null;
   }
 
   async fetchAuthUserById(id) {
