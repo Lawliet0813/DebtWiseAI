@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createRequestHandler } from './src/app.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 function debtwiseApiMiddleware() {
   return {
@@ -44,6 +48,11 @@ function debtwiseApiMiddleware() {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), debtwiseApiMiddleware()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
   server: {
     port: 3000,
     open: true
