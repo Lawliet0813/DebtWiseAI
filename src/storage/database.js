@@ -147,6 +147,72 @@ class FileDatabaseAdapter {
   }
 }
 
+const PROFILE_TABLE = 'profiles';
+
+function toNumber(value) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  const numeric = Number(value);
+  return Number.isNaN(numeric) ? value : numeric;
+}
+
+function serializeProfilePayload(payload) {
+  if (!payload) {
+    return null;
+  }
+  const record = {};
+  if (Object.prototype.hasOwnProperty.call(payload, 'id')) {
+    record.id = payload.id;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'email')) {
+    record.email = payload.email;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'passwordHash')) {
+    record.password_hash = payload.passwordHash;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'name')) {
+    record.name = payload.name;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'income')) {
+    record.income = payload.income;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'expenses')) {
+    record.expenses = payload.expenses;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'reminderPreferences')) {
+    record.reminder_preferences = payload.reminderPreferences;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'membership')) {
+    record.membership = payload.membership;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'createdAt')) {
+    record.created_at = payload.createdAt;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'updatedAt')) {
+    record.updated_at = payload.updatedAt;
+  }
+  return record;
+}
+
+function deserializeProfile(record) {
+  if (!record) {
+    return null;
+  }
+  return {
+    id: record.id,
+    email: record.email,
+    passwordHash: record.password_hash,
+    name: record.name,
+    income: toNumber(record.income) ?? 0,
+    expenses: toNumber(record.expenses) ?? 0,
+    reminderPreferences: record.reminder_preferences || { daysBeforeDue: 3, timeOfDay: '09:00' },
+    membership: record.membership || 'free',
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  };
+}
+
 class SupabaseDatabaseAdapter {
   constructor(options) {
     const { url, key, schema = 'public' } = options;
@@ -157,35 +223,37 @@ class SupabaseDatabaseAdapter {
   }
 
   async getUserById(id) {
-    const { data, error } = await this.client.from('users').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await this.client.from(PROFILE_TABLE).select('*').eq('id', id).maybeSingle();
     if (error) {
       throw new Error(`Supabase getUserById failed: ${error.message}`);
     }
-    return data;
+    return deserializeProfile(data);
   }
 
   async getUserByEmail(email) {
-    const { data, error } = await this.client.from('users').select('*').eq('email', email).maybeSingle();
+    const { data, error } = await this.client.from(PROFILE_TABLE).select('*').eq('email', email).maybeSingle();
     if (error) {
       throw new Error(`Supabase getUserByEmail failed: ${error.message}`);
     }
-    return data;
+    return deserializeProfile(data);
   }
 
   async createUser(user) {
-    const { data, error } = await this.client.from('users').insert(user).select().single();
+    const payload = serializeProfilePayload(user);
+    const { data, error } = await this.client.from(PROFILE_TABLE).insert(payload).select().single();
     if (error) {
       throw new Error(`Supabase createUser failed: ${error.message}`);
     }
-    return data;
+    return deserializeProfile(data);
   }
 
   async updateUser(id, updates) {
-    const { data, error } = await this.client.from('users').update(updates).eq('id', id).select().maybeSingle();
+    const payload = serializeProfilePayload(updates);
+    const { data, error } = await this.client.from(PROFILE_TABLE).update(payload).eq('id', id).select().maybeSingle();
     if (error) {
       throw new Error(`Supabase updateUser failed: ${error.message}`);
     }
-    return data;
+    return deserializeProfile(data);
   }
 
   async listDebtsByUser(userId) {

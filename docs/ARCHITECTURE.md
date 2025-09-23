@@ -31,7 +31,7 @@ The backend exposes stateless JSON endpoints; clients authenticate using JWT bea
 
 ## Data Model
 
-### Users
+### Users (stored in `public.profiles`)
 
 ```
 {
