@@ -133,10 +133,19 @@ class ApiService {
         if (error) throw error;
 
         const token = data.session.access_token;
+        const metadataName =
+          (typeof data.user.user_metadata?.full_name === 'string'
+            ? data.user.user_metadata.full_name
+            : undefined) ??
+          (typeof data.user.user_metadata?.name === 'string'
+            ? data.user.user_metadata.name
+            : undefined) ??
+          data.user.email;
+
         const user = {
           id: data.user.id,
           email: data.user.email,
-          name: data.user.user_metadata?.name || data.user.email,
+          name: metadataName ?? data.user.email,
           membershipType: 'free' // 預設值
         };
 
@@ -163,26 +172,50 @@ class ApiService {
   async register(userData) {
     if (this.useReal && supabase) {
       try {
+        const fullName = userData.name?.trim() || null;
+        const emailRedirectTo =
+          typeof window !== 'undefined' ? window.location.origin : undefined;
+
         const { data, error } = await supabase.auth.signUp({
           email: userData.email,
           password: userData.password,
           options: {
+            emailRedirectTo,
             data: {
-              name: userData.name
-            }
-          }
+              full_name: fullName ?? undefined,
+            },
+          },
         });
 
         if (error) throw error;
 
+        const registeredUser = data?.user ?? null;
+
+        if (registeredUser) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert(
+              {
+                id: registeredUser.id,
+                full_name: fullName,
+              },
+              { onConflict: 'id' },
+            );
+
+          if (profileError) throw profileError;
+        }
+
+        const fallbackEmail = registeredUser?.email ?? userData.email;
+        const fallbackName = fullName ?? fallbackEmail;
+
         return {
           message: 'User created successfully',
           user: {
-            id: data.user.id,
-            email: data.user.email,
-            name: userData.name,
-            membershipType: 'free'
-          }
+            id: registeredUser?.id ?? null,
+            email: fallbackEmail,
+            name: fallbackName,
+            membershipType: 'free',
+          },
         };
       } catch (error) {
         console.error('Supabase register error:', error);
@@ -204,18 +237,40 @@ class ApiService {
     if (this.useReal && supabase) {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
-        
+
         if (error || !user) {
           localStorage.removeItem('debtwise_token');
           localStorage.removeItem('debtwise_user');
           return null;
         }
 
+        const metadataFullName =
+          (typeof user.user_metadata?.full_name === 'string'
+            ? user.user_metadata.full_name
+            : undefined) ??
+          (typeof user.user_metadata?.name === 'string'
+            ? user.user_metadata.name
+            : undefined) ??
+          null;
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, membership_type')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError;
+        }
+
+        const membershipType = profile?.membership_type ?? 'free';
+        const profileName = profile?.full_name ?? metadataFullName;
+
         const userProfile = {
           id: user.id,
           email: user.email,
-          name: user.user_metadata?.name || user.email,
-          membershipType: 'free'
+          name: profileName ?? user.email ?? '',
+          membershipType,
         };
 
         localStorage.setItem('debtwise_user', JSON.stringify(userProfile));

@@ -6,7 +6,7 @@ import type {
 } from '@supabase/supabase-js';
 import type { Debt, Payment, Reminder, UserProfile } from '../types/db';
 
-type MockUser = UserProfile & { password: string };
+type MockUser = UserProfile & { email: string; password: string };
 
 type MockData = {
   users: MockUser[];
@@ -56,7 +56,7 @@ const defaultData: MockData = {
     {
       id: defaultUserId,
       email: 'demo@debtwise.ai',
-      name: 'DebtWise Demo',
+      full_name: 'DebtWise Demo',
       membership_type: 'premium',
       created_at: now,
       updated_at: now,
@@ -270,7 +270,7 @@ function toAuthUser(user: MockUser) {
     id: user.id,
     email: user.email,
     app_metadata: { provider: 'email' },
-    user_metadata: { name: user.name },
+    user_metadata: { full_name: user.full_name, name: user.full_name },
     aud: 'authenticated',
     role: 'authenticated',
     created_at: user.created_at,
@@ -398,7 +398,7 @@ class MockSupabaseAuth {
       user = {
         id: generateId('mock-user'),
         email,
-        name: email,
+        full_name: email,
         membership_type: 'free',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -426,7 +426,7 @@ class MockSupabaseAuth {
   }: {
     email: string;
     password: string;
-    options?: { data?: { name?: string } };
+    options?: { data?: { full_name?: string | null } };
   }): Promise<AuthResponse> {
     const existing = this.findUserByEmail(email);
 
@@ -437,10 +437,12 @@ class MockSupabaseAuth {
       } as unknown as AuthResponse;
     }
 
+    const fullName = options?.data?.full_name ?? null;
+
     const user: MockUser = {
       id: generateId('mock-user'),
       email,
-      name: options?.data?.name ?? email,
+      full_name: fullName ?? email,
       membership_type: 'free',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

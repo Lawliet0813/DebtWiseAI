@@ -22,8 +22,7 @@ export type StrategyType = 'snowball' | 'avalanche';
 
 export interface UserProfile {
   id: string;
-  email: string;
-  name?: string | null;
+  full_name?: string | null;
   membership_type: MembershipType;
   created_at: string;
   updated_at: string;
@@ -116,21 +115,17 @@ const requireAuthUser = async (): Promise<User> => {
 
 export const upsertMyProfile = async (): Promise<UserProfile> => {
   const user = await requireAuthUser();
-  if (!user.email) {
-    throw new Error('Authenticated user is missing an email address.');
-  }
 
   const profilePayload = {
     id: user.id,
-    email: user.email,
-    name:
+    full_name:
       (user.user_metadata?.full_name as string | undefined) ??
       (user.user_metadata?.name as string | undefined) ??
       null,
   };
 
   const { data, error } = await supabase
-    .from('user_profiles')
+    .from('profiles')
     .upsert(profilePayload, { onConflict: 'id' })
     .select()
     .single();
