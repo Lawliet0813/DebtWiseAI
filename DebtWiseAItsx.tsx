@@ -81,6 +81,7 @@ export const useAuthLogic = () => {
           name,
           membership_type: 'free',
         });
+      // profiles 表僅儲存自訂欄位（例如 name、membership_type），email 由 Auth 管理。
 
       if (profileError && profileError.code !== '23505') {
         throw profileError;
@@ -135,6 +136,8 @@ export const useAuthLogic = () => {
         return '目前沒有登入的使用者。';
       }
 
+      const emailAddress = user.email ?? '使用者';
+
       const { data: profile, error: profileError } = await supabase
         .from<Profile>('profiles')
         .select('name, membership_type')
@@ -146,11 +149,11 @@ export const useAuthLogic = () => {
       }
 
       if (!profile) {
-        return `已登入 ${user.email ?? '使用者'}，但找不到會員資料。`;
+        return `已登入 ${emailAddress}，但找不到會員資料。`;
       }
 
       const membership = profile.membership_type ?? '未知方案';
-      const displayName = profile.name ?? user.email ?? '使用者';
+      const displayName = profile.name ?? emailAddress;
       return `歡迎 ${displayName}，會員方案：${membership}`;
     });
   }, [run]);
