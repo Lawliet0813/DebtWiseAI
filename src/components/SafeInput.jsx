@@ -1,109 +1,56 @@
 // src/components/SafeInput.jsx - 防擴展干擾的輸入框
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const SafeInput = ({ 
-  type = 'text', 
-  value, 
-  onChange, 
-  placeholder, 
-  className, 
+const SafeInput = ({
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  className,
   disabled,
   autoComplete = 'off',
-  ...props 
+  onFocus,
+  onBlur,
+  onKeyDown,
+  ...rest
 }) => {
   const inputRef = useRef(null);
-  const [localValue, setLocalValue] = useState(value || '');
-  const [isFocused, setIsFocused] = useState(false);
+  const [localValue, setLocalValue] = useState(value ?? '');
 
   // 同步外部 value 變化
   useEffect(() => {
-    setLocalValue(value || '');
+    setLocalValue(value ?? '');
   }, [value]);
 
-  // 防止擴展干擾的屬性設置
-  useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
+  const handleFocus = useCallback(
+    (event) => {
+      onFocus?.(event);
+    },
+    [onFocus],
+  );
 
-    // 設置防止密碼管理器干擾的屬性
-    input.setAttribute('data-lpignore', 'true');
-    input.setAttribute('data-form-type', 'other');
-    input.setAttribute('autocomplete', 'new-password');
-    input.setAttribute('readonly', 'readonly');
-    
-    // 延遲移除 readonly，避免自動填充
-    const timer = setTimeout(() => {
-      input.removeAttribute('readonly');
-    }, 100);
+  const handleBlur = useCallback(
+    (event) => {
+      onBlur?.(event);
+    },
+    [onBlur],
+  );
 
-    return () => clearTimeout(timer);
-  }, []);
+  const handleChange = useCallback(
+    (event) => {
+      const newValue = event.target.value;
+      setLocalValue(newValue);
+      onChange?.(event);
+    },
+    [onChange],
+  );
 
-  const handleFocus = useCallback((e) => {
-    setIsFocused(true);
-    
-    // 確保輸入框可編輯
-    const input = e.target;
-    input.removeAttribute('readonly');
-    input.style.pointerEvents = 'auto';
-    
-    // 觸發外部 onFocus
-    if (props.onFocus) {
-      props.onFocus(e);
-    }
-  }, [props.onFocus]);
-
-  const handleBlur = useCallback((e) => {
-    setIsFocused(false);
-    
-    // 觸發外部 onBlur
-    if (props.onBlur) {
-      props.onBlur(e);
-    }
-  }, [props.onBlur]);
-
-  const handleChange = useCallback((e) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    
-    // 觸發外部 onChange
-    if (onChange) {
-      onChange(e);
-    }
-  }, [onChange]);
-
-  const handleKeyDown = useCallback((e) => {
-    // 防止擴展攔截按鍵事件
-    e.stopPropagation();
-    
-    if (props.onKeyDown) {
-      props.onKeyDown(e);
-    }
-  }, [props.onKeyDown]);
-
-  // 防止擴展修改輸入框
-  useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes') {
-          // 如果擴展修改了屬性，恢復我們的設定
-          if (mutation.attributeName === 'readonly' && input.hasAttribute('readonly') && isFocused) {
-            input.removeAttribute('readonly');
-          }
-        }
-      });
-    });
-
-    observer.observe(input, {
-      attributes: true,
-      attributeFilter: ['readonly', 'disabled', 'autocomplete']
-    });
-
-    return () => observer.disconnect();
-  }, [isFocused]);
+  const handleKeyDown = useCallback(
+    (event) => {
+      onKeyDown?.(event);
+    },
+    [onKeyDown],
+  );
 
   return (
     <input
@@ -117,17 +64,12 @@ const SafeInput = ({
       placeholder={placeholder}
       className={className}
       disabled={disabled}
-      autoComplete="new-password" // 防止自動填充
+      autoComplete={autoComplete}
       data-lpignore="true" // LastPass 忽略
       data-1p-ignore="true" // 1Password 忽略
       data-form-type="other" // 通用擴展忽略
       spellCheck="false" // 禁用拼寫檢查避免干擾
-      {...props}
-      // 強制覆蓋可能有問題的 props
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
+      {...rest}
     />
   );
 };
