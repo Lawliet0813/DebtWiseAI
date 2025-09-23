@@ -207,11 +207,7 @@ class ApiService {
         }
 
         console.error('Supabase register error:', error);
-        // 回退到 API 端點
-        return this.request('/auth/register', {
-          method: 'POST',
-          body: userData,
-        });
+        throw new Error(message || '註冊失敗，請稍後再試。');
       }
     } else {
       return this.request('/auth/register', {
