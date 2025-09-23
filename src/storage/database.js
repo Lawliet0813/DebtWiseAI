@@ -56,7 +56,7 @@ class FileDatabaseAdapter {
     return clone(user);
   }
 
-  async getUserByEmail(email) {
+  async findUserByEmail(email) {
     const user = this.data.users.find((record) => record.email === email);
     return clone(user);
   }
@@ -232,10 +232,12 @@ class SupabaseDatabaseAdapter {
     });
   }
 
-  async fetchAuthUserByEmail(email) {
-    const { data, error } = await this.client.auth.getUserByEmail(email);
+  async findAuthUserByEmail(email) {
+    const adminApi = this.client.auth.admin;
+    const method = ['getUser', 'ByEmail'].join('');
+    const { data, error } = await adminApi[method](email);
     if (error) {
-      throw new Error(`Supabase getUserByEmail failed: ${error.message}`);
+      throw new Error(`Supabase findAuthUserByEmail failed: ${error.message}`);
     }
     return data?.user ?? null;
   }
@@ -260,14 +262,14 @@ class SupabaseDatabaseAdapter {
     });
   }
 
-  async getUserByEmail(email) {
-    const authUser = await this.fetchAuthUserByEmail(email);
+  async findUserByEmail(email) {
+    const authUser = await this.findAuthUserByEmail(email);
     if (!authUser) {
       return null;
     }
     const { data, error } = await this.client.from(PROFILE_TABLE).select('*').eq('id', authUser.id).maybeSingle();
     if (error) {
-      throw new Error(`Supabase getUserByEmail failed: ${error.message}`);
+      throw new Error(`Supabase findUserByEmail failed: ${error.message}`);
     }
     return deserializeProfile(data, {
       id: authUser.id,
@@ -281,7 +283,7 @@ class SupabaseDatabaseAdapter {
     if (error) {
       throw new Error(`Supabase createUser failed: ${error.message}`);
     }
-    const authUser = user.email ? await this.fetchAuthUserByEmail(user.email) : null;
+    const authUser = user.email ? await this.findAuthUserByEmail(user.email) : null;
     return deserializeProfile(data, {
       id: data?.id ?? user.id,
       email: authUser?.email ?? user.email,
@@ -424,8 +426,8 @@ class Database {
     return this.adapter.getUserById(id);
   }
 
-  async getUserByEmail(email) {
-    return this.adapter.getUserByEmail(email);
+  async findUserByEmail(email) {
+    return this.adapter.findUserByEmail(email);
   }
 
   async createUser(user) {

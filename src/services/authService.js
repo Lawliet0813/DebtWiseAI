@@ -19,7 +19,7 @@ function createAuthService(context) {
     const password = getString(payload, 'password', { minLength: 8 });
     const name = getString(payload, 'name', { required: false, defaultValue: '' });
 
-    const existing = await db.getUserByEmail(email);
+    const existing = await db.findUserByEmail(email);
     if (existing) {
       throw new AppError(409, 'Email is already registered.');
     }
@@ -51,7 +51,7 @@ function createAuthService(context) {
   async function login(payload) {
     const email = ensureEmail(getString(payload, 'email', { minLength: 3 }));
     const password = getString(payload, 'password', { minLength: 8 });
-    const user = await db.getUserByEmail(email);
+    const user = await db.findUserByEmail(email);
     if (!user || !verifyPassword(password, user.passwordHash)) {
       throw new AppError(401, 'Invalid email or password.');
     }
@@ -77,7 +77,7 @@ function createAuthService(context) {
 
   async function requestPasswordReset(payload) {
     const email = ensureEmail(getString(payload, 'email', { minLength: 3 }));
-    const user = await db.getUserByEmail(email);
+    const user = await db.findUserByEmail(email);
     if (!user) {
       throw new AppError(404, 'User with provided email was not found.');
     }

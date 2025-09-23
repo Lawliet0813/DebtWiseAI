@@ -1,24 +1,22 @@
 // src/services/apiService.js - 完整修正版
 // 修復 undefined membership 錯誤
 // 支援 Supabase 真實 API 和 Mock API 備用
-import { createClient } from '@supabase/supabase-js';
+import supabase from '@/lib/supabaseClient';
+import { signInUser, signUpWithProfile } from '@/lib/auth';
 
-// 初始化 Supabase 客戶端
+// 初始化 Supabase 設定
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-let supabase = null;
-
 // 檢查是否使用真實 API
 const useRealAPI = () => {
-  return import.meta.env.VITE_USE_MOCK_API !== 'true' && 
-         supabaseUrl && 
-         supabaseAnonKey;
+  return (
+    import.meta.env.VITE_USE_MOCK_API !== 'true' &&
+    Boolean(supabaseUrl && supabaseAnonKey)
+  );
 };
 
-// 初始化 Supabase
 if (useRealAPI()) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
   console.log('🔧 DebtWise API Mode: Real API');
 } else {
   console.log('🔧 DebtWise API Mode: Mock API (fallback)');
@@ -123,88 +121,69 @@ class ApiService {
 
   // 認證相關
   async login(email, password) {
-    if (this.useReal && supabase) {
+    if (this.useReal) {
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
+        const { user, session } = await signInUser(email, password);
 
-        if (error) throw error;
+        if (!user) {
+          throw new Error('登入失敗，未取得使用者資料。');
+        }
 
-        const token = data.session.access_token;
+        const token = session?.access_token;
+        if (!token) {
+          throw new Error('登入失敗，請稍後再試。');
+        }
+
         const metadataName =
-          (typeof data.user.user_metadata?.full_name === 'string'
-            ? data.user.user_metadata.full_name
+          (typeof user.user_metadata?.full_name === 'string'
+            ? user.user_metadata.full_name
             : undefined) ??
-          (typeof data.user.user_metadata?.name === 'string'
-            ? data.user.user_metadata.name
+          (typeof user.user_metadata?.name === 'string'
+            ? user.user_metadata.name
             : undefined) ??
-          data.user.email;
+          user.email;
 
-        const user = {
-          id: data.user.id,
-          email: data.user.email,
-          name: metadataName ?? data.user.email,
-          membershipType: 'free' // 預設值
+        const resolvedName = metadataName ?? user.email ?? '';
+
+        const authenticatedUser = {
+          id: user.id,
+          email: user.email,
+          name: resolvedName,
+          membershipType: 'free', // 預設值
         };
 
         localStorage.setItem('debtwise_token', token);
-        localStorage.setItem('debtwise_user', JSON.stringify(user));
+        localStorage.setItem('debtwise_user', JSON.stringify(authenticatedUser));
 
-        return { token, user };
+        return { token, user: authenticatedUser };
       } catch (error) {
         console.error('Supabase login error:', error);
         // 回退到 API 端點
         return this.request('/auth/login', {
           method: 'POST',
-          body: { email, password }
+          body: { email, password },
         });
       }
     } else {
       return this.request('/auth/login', {
         method: 'POST',
-        body: { email, password }
+        body: { email, password },
       });
     }
   }
 
   async register(userData) {
-    if (this.useReal && supabase) {
+    if (this.useReal) {
       try {
-        const fullName = userData.name?.trim() || null;
-        const emailRedirectTo =
-          typeof window !== 'undefined' ? window.location.origin : undefined;
+        const fullName = userData.name?.trim() || undefined;
 
-        const { data, error } = await supabase.auth.signUp({
+        const data = await signUpWithProfile({
           email: userData.email,
           password: userData.password,
-          options: {
-            emailRedirectTo,
-            data: {
-              full_name: fullName ?? undefined,
-            },
-          },
+          fullName,
         });
 
-        if (error) throw error;
-
-        const registeredUser = data?.user ?? null;
-
-        if (registeredUser) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert(
-              {
-                id: registeredUser.id,
-                full_name: fullName,
-              },
-              { onConflict: 'id' },
-            );
-
-          if (profileError) throw profileError;
-        }
-
+        const registeredUser = data.user ?? null;
         const fallbackEmail = registeredUser?.email ?? userData.email;
         const fallbackName = fullName ?? fallbackEmail;
 
@@ -218,23 +197,32 @@ class ApiService {
           },
         };
       } catch (error) {
+        const message =
+          typeof (error as { message?: unknown })?.message === 'string'
+            ? (error as Error).message
+            : '';
+
+        if (message.toLowerCase().includes('already registered')) {
+          throw new Error('此 Email 已被註冊。請直接登入或更換 Email。');
+        }
+
         console.error('Supabase register error:', error);
         // 回退到 API 端點
         return this.request('/auth/register', {
           method: 'POST',
-          body: userData
+          body: userData,
         });
       }
     } else {
       return this.request('/auth/register', {
         method: 'POST',
-        body: userData
+        body: userData,
       });
     }
   }
 
   async getCurrentUser() {
-    if (this.useReal && supabase) {
+    if (this.useReal) {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
 
@@ -285,7 +273,7 @@ class ApiService {
   }
 
   logout() {
-    if (this.useReal && supabase) {
+    if (this.useReal) {
       supabase.auth.signOut();
     }
     localStorage.removeItem('debtwise_token');
