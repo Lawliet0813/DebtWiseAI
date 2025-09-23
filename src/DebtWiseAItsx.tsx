@@ -8,6 +8,7 @@ import {
 import type { User } from '@supabase/supabase-js';
 
 import supabase from '@/lib/supabaseClient';
+import { signInUser, signUpWithProfile } from '@/lib/auth';
 import type { Debt, DebtStatus, DebtType, UserProfile } from '@/types/db';
 
 type AuthField = 'name' | 'email' | 'password';
@@ -64,45 +65,32 @@ export const useAuthLogic = () => {
     await run(async () => {
       const trimmedName = name.trim();
 
-      const emailRedirectTo =
-        typeof window !== 'undefined' ? window.location.origin : undefined;
+      try {
+        const data = await signUpWithProfile({
+          email,
+          password,
+          fullName: trimmedName || undefined,
+        });
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo,
-          data: { full_name: trimmedName || undefined },
-        },
-      });
+        const registeredUser = data.user ?? null;
 
-      if (error) {
-        throw error;
-      }
-
-      const registeredUser = data.user ?? null;
-
-      if (registeredUser) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert(
-            {
-              id: registeredUser.id,
-              full_name: trimmedName || null,
-            },
-            { onConflict: 'id' },
-          );
-
-        if (profileError) {
-          throw profileError;
+        if (!registeredUser) {
+          return '註冊成功，請至信箱完成驗證。';
         }
-      }
 
-      if (!registeredUser) {
-        return '註冊成功，請至信箱完成驗證。';
-      }
+        return '註冊成功，已建立帳戶資料。';
+      } catch (error) {
+        const message =
+          typeof (error as { message?: unknown })?.message === 'string'
+            ? (error as Error).message
+            : '';
 
-      return '註冊成功，已建立帳戶資料。';
+        if (message.toLowerCase().includes('already registered')) {
+          throw new Error('此 Email 已被註冊。請直接登入或更換 Email。');
+        }
+
+        throw new Error(message || '註冊失敗，請稍後再試。');
+      }
     });
   }, [email, name, password, run]);
 
@@ -113,14 +101,7 @@ export const useAuthLogic = () => {
     }
 
     await run(async () => {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        throw error;
-      }
+      await signInUser(email, password);
 
       return '登入成功。';
     });
