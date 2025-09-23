@@ -12,7 +12,7 @@ import type { Debt, DebtStatus, DebtType, UserProfile } from '@/types/db';
 
 type AuthField = 'name' | 'email' | 'password';
 
-type ProfileSummary = Pick<UserProfile, 'name' | 'membership_type'>;
+type ProfileSummary = Pick<UserProfile, 'full_name' | 'membership_type'>;
 
 export const useAuthLogic = () => {
   const [name, setName] = useState('');
@@ -64,11 +64,15 @@ export const useAuthLogic = () => {
     await run(async () => {
       const trimmedName = name.trim();
 
+      const emailRedirectTo =
+        typeof window !== 'undefined' ? window.location.origin : undefined;
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { name: trimmedName || undefined },
+          emailRedirectTo,
+          data: { full_name: trimmedName || undefined },
         },
       });
 
@@ -78,15 +82,13 @@ export const useAuthLogic = () => {
 
       const registeredUser = data.user ?? null;
 
-      if (registeredUser?.email) {
+      if (registeredUser) {
         const { error: profileError } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .upsert(
             {
               id: registeredUser.id,
-              email: registeredUser.email,
-              name: trimmedName || registeredUser.email,
-              membership_type: 'free',
+              full_name: trimmedName || null,
             },
             { onConflict: 'id' },
           );
@@ -152,8 +154,8 @@ export const useAuthLogic = () => {
       const emailAddress = user.email ?? '使用者';
 
       const { data: profile, error: profileError } = await supabase
-        .from<ProfileSummary>('user_profiles')
-        .select('name, membership_type')
+        .from<ProfileSummary>('profiles')
+        .select('full_name, membership_type')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -166,7 +168,7 @@ export const useAuthLogic = () => {
       }
 
       const membership = profile.membership_type ?? '未知方案';
-      const displayName = profile.name ?? emailAddress;
+      const displayName = profile.full_name ?? emailAddress;
       return `歡迎 ${displayName}，會員方案：${membership}`;
     });
   }, [run]);

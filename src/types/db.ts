@@ -13,8 +13,7 @@ export type StrategyType = 'snowball' | 'avalanche';
 
 export interface UserProfile {
   id: string;
-  email: string;
-  name?: string;
+  full_name?: string | null;
   membership_type: MembershipType;
   created_at: string;
   updated_at: string;
