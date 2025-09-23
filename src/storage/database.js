@@ -161,34 +161,57 @@ function serializeProfilePayload(payload) {
   if (!payload) {
     return null;
   }
+
   const record = {};
+
   if (Object.prototype.hasOwnProperty.call(payload, 'id')) {
     record.id = payload.id;
   }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'passwordHash')) {
     record.password_hash = payload.passwordHash;
   }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'name')) {
-    record.name = payload.name;
+    record.full_name = payload.name;
   }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'fullName')) {
+    record.full_name = payload.fullName;
+  }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'income')) {
     record.income = payload.income;
   }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'expenses')) {
     record.expenses = payload.expenses;
   }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'reminderPreferences')) {
     record.reminder_preferences = payload.reminderPreferences;
   }
-  if (Object.prototype.hasOwnProperty.call(payload, 'membership')) {
-    record.membership = payload.membership;
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'membership_type')) {
+    record.membership_type = payload.membership_type;
   }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'membership')) {
+    record.membership_type = payload.membership;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'membershipType')) {
+    record.membership_type = payload.membershipType;
+  }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'createdAt')) {
     record.created_at = payload.createdAt;
   }
+
   if (Object.prototype.hasOwnProperty.call(payload, 'updatedAt')) {
     record.updated_at = payload.updatedAt;
   }
+
   return record;
 }
 
@@ -200,13 +223,13 @@ function deserializeProfile(record, overrides = {}) {
   const base = record
     ? {
         id: record.id,
-        email: record.email,
+        fullName: record.full_name,
         passwordHash: record.password_hash,
-        name: record.name,
         income: toNumber(record.income),
         expenses: toNumber(record.expenses),
         reminderPreferences: record.reminder_preferences,
-        membership: record.membership,
+        membership: record.membership_type,
+        membership_type: record.membership_type,
         createdAt: record.created_at,
         updatedAt: record.updated_at,
       }
@@ -214,6 +237,12 @@ function deserializeProfile(record, overrides = {}) {
 
   const result = { ...base, ...overrides };
 
+  result.name = result.name || result.fullName || result.email || '';
+  result.fullName = result.fullName ?? null;
+  result.full_name = result.full_name || result.fullName;
+  result.membership = result.membership || result.membership_type;
+  result.membership_type = result.membership_type || result.membership;
+  result.membershipType = result.membershipType || result.membership_type;
   result.income = toNumber(result.income) ?? 0;
   result.expenses = toNumber(result.expenses) ?? 0;
   result.reminderPreferences =
@@ -294,7 +323,14 @@ class SupabaseDatabaseAdapter {
     if (error) {
       throw new Error(`Supabase updateUser failed: ${error.message}`);
     }
-    return deserializeProfile(data);
+    if (!data) {
+      return null;
+    }
+    const authUser = await this.fetchAuthUserById(id);
+    return deserializeProfile(data, {
+      id: authUser?.id ?? data.id ?? id,
+      email: authUser?.email ?? undefined,
+    });
   }
 
   async listDebtsByUser(userId) {

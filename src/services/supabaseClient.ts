@@ -26,8 +26,7 @@ const getEnvVar = (key: string) => {
   return undefined;
 };
 
-const useMockSupabase =
-  (getEnvVar('VITE_SUPABASE_USE_MOCK') ?? getEnvVar('SUPABASE_USE_MOCK')) === 'true';
+const useMockSupabase = getEnvVar('VITE_SUPABASE_USE_MOCK') === 'true';
 
 let supabaseClient: Pick<SupabaseClient, 'auth' | 'from'>;
 
@@ -36,9 +35,8 @@ if (useMockSupabase) {
   console.info(`[supabaseClient] ${MOCK_SUPABASE_NOTICE}`);
   supabaseClient = createMockSupabaseClient();
 } else {
-  const supabaseUrl = getEnvVar('VITE_SUPABASE_URL') ?? getEnvVar('SUPABASE_URL');
-  const supabaseAnonKey =
-    getEnvVar('VITE_SUPABASE_ANON_KEY') ?? getEnvVar('SUPABASE_ANON_KEY');
+  const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
+  const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
 
   if (!supabaseUrl) {
     throw new Error('Missing VITE_SUPABASE_URL environment variable.');
