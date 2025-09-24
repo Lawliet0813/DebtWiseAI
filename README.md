@@ -101,6 +101,14 @@ npm run preview
 npm run test
 ```
 
+## 🔌 前後端連線配置
+
+- **預設行為**：前端會呼叫與網站同網域的 `/api`，適用於本地開發（Vite 代理）與 Vercel 等部署環境。
+- **環境變數**：
+  - `VITE_API_BASE_URL`（建議）或 `VITE_API_URL`（相容用）可覆寫 API 位置。
+  - 若需指向外部後端，請設定完整的網址，例如 `https://api.example.com`。
+- **備註**：環境變數中的網址會自動移除結尾的 `/`，避免產生 `//api` 之類的錯誤路徑。
+
 ## 🔧 後端設定（Supabase）
 
 後端 API 預設會連線至 Supabase PostgreSQL。請在部署或啟動 Serverless Functions 時設定以下環境變數：
