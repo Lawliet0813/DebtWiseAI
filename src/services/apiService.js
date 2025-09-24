@@ -8,6 +8,13 @@ import { signInUser, signUpWithProfile } from '@/lib/auth';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const resolveApiBaseUrl = () => {
+  const envBaseUrl =
+    import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? '/api';
+  const sanitized = envBaseUrl.replace(/\/+$/, '');
+  return sanitized || '/api';
+};
+
 // 檢查是否使用真實 API
 const useRealAPI = () => {
   return (
@@ -25,7 +32,7 @@ if (useRealAPI()) {
 // API 服務類
 class ApiService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'https://debtwise-ai.vercel.app/api';
+    this.baseURL = resolveApiBaseUrl();
     this.useReal = useRealAPI();
   }
 
